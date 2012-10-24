@@ -112,21 +112,6 @@ private class Context {
 		}
 	}
 	
-	/+bool white(ulong count = 1) {
-		assert(count != 0);
-		if (count > src.length) {
-			return false;
-		}
-		
-		while (count-- != 0) {
-			if (src[count] != ' ' && src[count] != '\t') {
-				return false;
-			}
-		}
-		
-		return true;
-	}+/
-	
 	bool match(in string regex) {
 		return !(src.match(regex).empty());
 	}
@@ -144,16 +129,6 @@ private class Context {
 		return src[0..count];
 	}
 	
-	/* TODO: upon append, annotate with the src line/col (and filename) so that
-	 * later steps may have proper line/col */
-	/+void put(in string buf) {
-		assert(buf.length != 0);
-		dst ~= buf;
-	}
-	void put(in char c) {
-		dst ~= c;
-	}+/
-	
 	void push(ulong count = 1) {
 		assert(count != 0);
 		assert(count <= src.length);
@@ -161,14 +136,6 @@ private class Context {
 		buffer ~= src[0..count];
 		advance(count);
 	}
-	
-	/+void echo(ulong count = 1) {
-		assert(count != 0);
-		assert(count <= src.length);
-		
-		put(src[0..count]);
-		advance(count);
-	}+/
 	
 	void advance(ulong count = 1) {
 		assert(count != 0);
@@ -187,14 +154,6 @@ private class Context {
 		
 		src = src[count..$];
 	}
-	
-	/+void insert(in string ins) {
-		src = ins ~ src;
-	}
-	
-	string finished() {
-		return cast(string)dst;
-	}+/
 	
 	TokenLocation getLocation() {
 		return TokenLocation(filename, line, col);
@@ -235,42 +194,10 @@ private void error(in string msg) {
 	stderr.writefln("[pass0|error|%d:%d] %s", ctx.line, ctx.col, msg);
 	exit(1);
 }
-/+private void errorChar(in string msg) {
-	char c = ctx.get();
-	
-	if (isEscape(c)) {
-		error(msg.format(unescapize(c)));
-	} else if (c.isPrintable()) {
-		error(msg.format(c));
-	} else {
-		error(msg.format("???"));
-	}
-}+/
 
 private void warn(in string msg) {
 	stderr.writefln("[pass0|warn|%d:%d] %s", ctx.line, ctx.col, msg);
 }
-/+private void warnChar(in string msg) {
-	char c = ctx.get();
-	
-	if (isEscape(c)) {
-		warn(msg.format(unescapize(c)));
-	} else if (c.isPrintable()) {
-		warn(msg.format(c));
-	} else {
-		warn(msg.format("???"));
-	}
-}+/
-
-/+private void include() {
-	/* TODO: provide a mechanism whereby the include file's line/col information
-	 * can be preserved */
-	
-	string incSource = readSource(cast(string)ctx.buffer);
-	fixNewlines(incSource);
-	
-	ctx.insert(incSource);
-}+/
 
 Line[] doPass0(in string path, string src) {
 	ctx = new Context(path, src);
