@@ -24,6 +24,16 @@ public enum TokenType {
 	LABEL,
 	LITERAL_STR,
 	LITERAL_INT,
+	COMMA,
+	BRACKET_L,
+	BRACKET_R,
+	PAREN_L,
+	PAREN_R,
+	ADD,
+	SUBTRACT,
+	MULTIPLY,
+	DIVIDE,
+	MODULO,
 }
 
 public struct TokenLocation {
@@ -291,6 +301,36 @@ Line[] doPass0(in string path, string src) {
 			} else if (ctx.check('"')) {
 				ctx.state = State.LITERAL_STR;
 				ctx.saveLocation();
+				ctx.advance();
+			} else if (ctx.check(',')) {
+				ctx.addToken(Token(TokenType.COMMA, ctx.getLocation()));
+				ctx.advance();
+			} else if (ctx.check('[')) {
+				ctx.addToken(Token(TokenType.BRACKET_L, ctx.getLocation()));
+				ctx.advance();
+			} else if (ctx.check(']')) {
+				ctx.addToken(Token(TokenType.BRACKET_R, ctx.getLocation()));
+				ctx.advance();
+			} else if (ctx.check('(')) {
+				ctx.addToken(Token(TokenType.PAREN_L, ctx.getLocation()));
+				ctx.advance();
+			} else if (ctx.check(')')) {
+				ctx.addToken(Token(TokenType.PAREN_R, ctx.getLocation()));
+				ctx.advance();
+			} else if (ctx.check('+')) {
+				ctx.addToken(Token(TokenType.ADD, ctx.getLocation()));
+				ctx.advance();
+			} else if (ctx.check('-')) {
+				ctx.addToken(Token(TokenType.SUBTRACT, ctx.getLocation()));
+				ctx.advance();
+			} else if (ctx.check('*')) {
+				ctx.addToken(Token(TokenType.MULTIPLY, ctx.getLocation()));
+				ctx.advance();
+			} else if (ctx.check('/')) {
+				ctx.addToken(Token(TokenType.DIVIDE, ctx.getLocation()));
+				ctx.advance();
+			} else if (ctx.check('%')) {
+				ctx.addToken(Token(TokenType.MODULO, ctx.getLocation()));
 				ctx.advance();
 			} else if (ctx.check('\n')) {
 				ctx.advance();
