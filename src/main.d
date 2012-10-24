@@ -6,6 +6,7 @@
 module main;
 
 import std.c.stdlib;
+import std.conv;
 import std.stdio;
 import input;
 import newline;
@@ -30,7 +31,8 @@ void main(in string[] args) {
 		foreach (token; line.tokens) {
 			writefln("type: %s origin: %s %d:%d [%s]", token.type,
 				token.origin.file, token.origin.line, token.origin.col,
-				token.tagStr);
+				(token.type == TokenType.LITERAL_INT ? token.tagInt.to!string() :
+				token.tagStr));
 		}
 	}
 	

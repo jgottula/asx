@@ -50,6 +50,7 @@ public struct Token {
 	TokenType type;
 	TokenLocation origin;
 	union {
+		ulong tagInt;
 		string tagStr;
 	}
 }
@@ -217,14 +218,18 @@ Line[] doPass0(in string path, string src) {
 			} else if (ctx.check("//")) {
 				ctx.state = State.COMMENT_LINE;
 				ctx.advance(2);
-			} else if (ctx.match(r"^\w")) {
+			} else if (ctx.match(r"^[A-Za-z_]")) {
 				ctx.state = State.IDENTIFIER;
 				ctx.saveLocation();
 				goto case State.IDENTIFIER;
-			} else if (ctx.match(r"^\.\w")) {
+			} else if (ctx.match(r"^\.[A-Za-z_]")) {
 				ctx.state = State.DIRECTIVE;
 				ctx.saveLocation();
 				ctx.push();
+			} else if (ctx.match(r"^[0-9]")) {
+				ctx.state = State.LITERAL_INT;
+				ctx.saveLocation();
+				goto case State.LITERAL_INT;
 			} else if (ctx.check('"')) {
 				ctx.state = State.LITERAL_STR;
 				ctx.saveLocation();
@@ -293,7 +298,7 @@ Line[] doPass0(in string path, string src) {
 			ctx.advance;
 			break;
 		case State.IDENTIFIER:
-			if (ctx.match(r"^\w")) {
+			if (ctx.match(r"^[A-Za-z0-9_]")) {
 				ctx.push();
 			} else if (ctx.check(':')) {
 				auto token = Token(TokenType.LABEL, ctx.loc);
@@ -316,7 +321,7 @@ Line[] doPass0(in string path, string src) {
 			}
 			break;
 		case State.DIRECTIVE:
-			if (ctx.match(r"^\w")) {
+			if (ctx.match(r"^[A-Za-z0-9_]")) {
 				ctx.push();
 			} else {
 				auto token = Token(TokenType.DIRECTIVE, ctx.loc);
@@ -351,7 +356,25 @@ Line[] doPass0(in string path, string src) {
 			}
 			break;
 		case State.LITERAL_INT:
-			/* ... */
+			if (ctx.match(r"^[0-9]")) {
+				ctx.push();
+			} else {
+				ulong x = 0;
+				
+				for (ulong i = 0; i < ctx.buffer.length; ++i) {
+					x *= 10;
+					x += ctx.buffer[i] - '0';
+				}
+				
+				auto token = Token(TokenType.LITERAL_INT, ctx.loc);
+				token.tagInt = x;
+				
+				ctx.addToken(token);
+				ctx.buffer.length = 0;
+				
+				ctx.state = State.DEFAULT;
+				goto case State.DEFAULT;
+			}
 			break;
 		}
 	}
