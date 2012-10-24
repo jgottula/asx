@@ -51,8 +51,9 @@ public struct AnnotatedLine {
 	}
 }
 
-private class AsmContext {
-	this() {
+private class Context {
+	this(Line[] lines) {
+		this.lines = lines;
 		line = 0;
 		
 		section = Section.TEXT;
@@ -82,7 +83,7 @@ private:
 	ulong offset;
 }
 
-AsmContext ctx;
+Context ctx;
 
 
 private void error(in TokenLocation l, in string msg) {
@@ -94,7 +95,7 @@ private void warn(in TokenLocation l, in string msg) {
 	stderr.writefln("[pass1|warn|%d:%d] %s", l.line, l.col, msg);
 }
 
-private Expression addExprs(Expression a, Expression b) {
+private Expression addExprs(in Expression a, in Expression b) {
 	if (a.sign == b.sign) {
 		return Expression(a.sign, a.value + b.value);
 	} else if (a.value >= b.value) {
@@ -107,7 +108,7 @@ private Expression addExprs(Expression a, Expression b) {
 	}
 }
 
-private Expression subExpr(DList!Token tokens) {
+private Expression subExpr(ref DList!Token tokens) {
 	bool init = false;
 	Expression expr;
 	
@@ -121,7 +122,7 @@ private Expression subExpr(DList!Token tokens) {
 	return expr;
 }
 
-private Expression evalExpr(Token[] tokens) {
+private Expression evalExpr(in Token[] tokens) {
 	auto expr = Expression(Sign.POSITIVE, 0);
 	DList!Token[] parenStack = [DList!Token(new Token[0])];
 	
@@ -179,8 +180,8 @@ private void directiveByte() {
 	// now 
 }
 
-AnnotatedLine[] doPass1(in Line[] lines) {
-	ctx = new AsmContext();
+AnnotatedLine[] doPass1(Line[] lines) {
+	ctx = new Context(lines);
 	
 lineLoop:
 	do {
@@ -196,6 +197,10 @@ lineLoop:
 		 * or "unexpected ___ after|before ___" */
 		
 		final switch (token.type) {
+		case TokenType.IDENTIFIER:
+			// check if this is a mneumonic
+			// otherwise, goto case invalid
+			break;
 		case TokenType.DIRECTIVE:
 			switch (token.tagStr) {
 			case ".byte":
@@ -212,7 +217,6 @@ lineLoop:
 		case TokenType.LABEL:
 			
 			break;
-		case TokenType.IDENTIFIER:
 		case TokenType.REGISTER:
 		case TokenType.LITERAL_STR:
 		case TokenType.LITERAL_INT:
