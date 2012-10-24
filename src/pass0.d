@@ -13,6 +13,7 @@ import std.string;
 import escape;
 import input;
 import newline;
+import register;
 
 
 /* pass0: strip comments, lex */
@@ -22,6 +23,7 @@ public enum TokenType {
 	IDENTIFIER,
 	DIRECTIVE,
 	LABEL,
+	REGISTER,
 	LITERAL_STR,
 	LITERAL_INT,
 	COMMA,
@@ -52,6 +54,7 @@ public struct Token {
 	union {
 		ulong tagInt;
 		string tagStr;
+		Register tagReg;
 	}
 }
 
@@ -204,6 +207,9 @@ Line[] doPass0(in string path, string src) {
 	ctx = new Context(path, src);
 	
 	while (!ctx.eof()) {
+		warn("TODO: specially handle line continuation character here");
+		/* \\\n */
+		
 		final switch (ctx.state) {
 		case State.DEFAULT:
 			if (ctx.check(' ') || ctx.check('\t')) {
@@ -309,6 +315,15 @@ Line[] doPass0(in string path, string src) {
 				
 				ctx.state = State.DEFAULT;
 				ctx.advance();
+			} else if ((cast(string)ctx.buffer in regNames) != null) {
+				auto token = Token(TokenType.REGISTER, ctx.loc);
+				token.tagReg = regNames[cast(string)ctx.buffer];
+				
+				ctx.addToken(token);
+				ctx.buffer.length = 0;
+				
+				ctx.state = State.DEFAULT;
+				goto case State.DEFAULT;
 			} else {
 				auto token = Token(TokenType.IDENTIFIER, ctx.loc);
 				token.tagStr = ctx.buffer.idup;

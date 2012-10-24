@@ -11,6 +11,7 @@ import std.stdio;
 import input;
 import newline;
 import pass0;
+import pass1;
 
 
 void main(in string[] args) {
@@ -29,12 +30,25 @@ void main(in string[] args) {
 	
 	foreach (line; lines) {
 		foreach (token; line.tokens) {
-			writefln("type: %s origin: %s %d:%d [%s]", token.type,
-				token.origin.file, token.origin.line, token.origin.col,
-				(token.type == TokenType.LITERAL_INT ? token.tagInt.to!string() :
-				token.tagStr));
+			string tag;
+			
+			switch (token.type) {
+			case TokenType.LITERAL_INT:
+				tag = token.tagInt.to!string();
+				break;
+			case TokenType.REGISTER:
+				tag = token.tagReg.to!string();
+				break;
+			default:
+				tag = token.tagStr;
+			}
+			
+			writefln("%s [%s] @ %s %d:%d", token.type, tag, token.origin.file,
+				token.origin.line, token.origin.col);
 		}
 	}
+	
+	AsmContext ctx = doPass1(lines);
 	
 	/+string source, ppSource;
 	readSource(args[1], source);
