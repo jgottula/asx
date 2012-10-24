@@ -1,4 +1,4 @@
-#include "include.s"
+.include "include.s"
 
 formatStr:
 	.strz "%d\n" // null-terminated ascii string
