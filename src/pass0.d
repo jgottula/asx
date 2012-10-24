@@ -15,6 +15,7 @@ import std.stdio;
 private enum State {
 	DEFAULT,
 	COMMENT_BLOCK,
+	COMMENT_NEST,
 }
 
 private class Context {
@@ -26,6 +27,8 @@ private class Context {
 		
 		this.line = 1;
 		this.col = 1;
+		
+		this.commentLevel = 0;
 	}
 	
 	ulong avail() {
@@ -37,9 +40,6 @@ private class Context {
 		return src[0..count];
 	}
 	
-	void put(char[] buf) {
-		dst ~= buf;
-	}
 	void put(string buf) {
 		dst ~= buf;
 	}
@@ -61,29 +61,49 @@ private class Context {
 	ulong line;
 	ulong col;
 	
+	ulong commentLevel;
+	
 private:
 	string src;
 	char[] dst;
 }
 
+Context ctx;
 
-private void error(Context ctx, string msg) {
+
+private void error(string msg) {
 	stderr.writefln("[pass0|error|%d:%d] %s", ctx.line, ctx.col, msg);
 	exit(1);
 }
 
-private void warn(Context ctx, string msg) {
+private void warn(string msg) {
 	stderr.writefln("[pass0|warn|%d:%d] %s", ctx.line, ctx.col, msg);
 }
 
+private void putCommentChar() {
+	if (ctx.get(1) == "\n") {
+		ctx.put("\n");
+	} else {
+		ctx.put(" ");
+	}
+	
+	ctx.advance();
+}
+
 void doPass0(ref string src) {
-	auto ctx = new Context(src);
+	ctx = new Context(src);
 	
 	while (ctx.avail() > 0) {
 		final switch (ctx.state) {
 		case State.DEFAULT:
 			if (ctx.avail() >= 2 && ctx.get(2) == "/*") {
 				ctx.state = State.COMMENT_BLOCK;
+				ctx.put("  ");
+				ctx.advance(2);
+				break;
+			} else if (ctx.avail() >= 2 && ctx.get(2) == "/+") {
+				ctx.state = State.COMMENT_NEST;
+				ctx.commentLevel = 1;
 				ctx.put("  ");
 				ctx.advance(2);
 				break;
@@ -99,8 +119,24 @@ void doPass0(ref string src) {
 				ctx.advance(2);
 				break;
 			} else {
-				ctx.put(" ");
-				ctx.advance();
+				putCommentChar();
+				break;
+			}
+		case State.COMMENT_NEST:
+			if (ctx.avail() >= 2 && ctx.get(2) == "/+") {
+				++ctx.commentLevel;
+				ctx.put("  ");
+				ctx.advance(2);
+				break;
+			} else if (ctx.avail() >= 2 && ctx.get(2) == "+/") {
+				if (--ctx.commentLevel == 0) {
+					ctx.state = State.DEFAULT;
+				}
+				ctx.put("  ");
+				ctx.advance(2);
+				break;
+			} else {
+				putCommentChar();
 				break;
 			}
 		}
@@ -112,7 +148,10 @@ void doPass0(ref string src) {
 		/* okay */
 		break;
 	case State.COMMENT_BLOCK:
-		error(ctx, "unterminated comment block at EOF");
+		error("unterminated block comment at EOF");
+		break;
+	case State.COMMENT_NEST:
+		error("unterminated nest comment at EOF");
 		break;
 	}
 	
