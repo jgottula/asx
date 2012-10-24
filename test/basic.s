@@ -18,3 +18,23 @@ main:
 	
 	xor eax,eax
 	ret
+
+/* squares a 32-bit integer */
+square:
+	push ebp
+	mov esp,ebp
+	
+	mov [ebp+4],eax
+	mov eax,edx
+	
+	mul edx
+	
+	mov ebp,esp
+	pop ebp
+	ret
+
+
+/+ nest comment +/
+/+/+ double nest comment +/+/
+/+/+/+/++/+/+/+/
+/+ /* layered */ +/

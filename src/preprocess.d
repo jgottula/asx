@@ -11,7 +11,7 @@ import std.stdio;
 
 enum PPState {
 	DEFAULT,
-	COMMENT_BLOCK, COMMENT_LINE,
+	COMMENT_BLOCK, COMMENT_NEST, COMMENT_LINE,
 	HASH, PPEND,
 	INCLUDE, INCLUDE_STR,
 	STRING,
@@ -24,6 +24,7 @@ PPState state;
 void preprocessSource(in string original, out string processed) {
 	string src = original;
 	char[] buffer, outBuf;
+	ulong level = 0;
 	
 	while (src.length != 0) {
 		if (state == PPState.DEFAULT) {
@@ -31,6 +32,11 @@ void preprocessSource(in string original, out string processed) {
 				if (src[1] == '*') {
 					src = src[2..$];
 					state = PPState.COMMENT_BLOCK;
+					continue;
+				} else if (src[1] == '+') {
+					src = src[2..$];
+					level = 1;
+					state = PPState.COMMENT_NEST;
 					continue;
 				} else if (src[1] == '/') {
 					src = src[2..$];
@@ -50,6 +56,21 @@ void preprocessSource(in string original, out string processed) {
 			if (src[0] == '*' && src.length >= 2 && src[1] == '/') {
 				src = src[2..$];
 				state = PPState.DEFAULT;
+				continue;
+			} else {
+				src = src[1..$];
+				continue;
+			}
+		} else if (state == PPState.COMMENT_NEST) {
+			if (src[0] == '+' && src.length >= 2 && src[1] == '/') {
+				if (--level == 0) {
+					state = PPState.DEFAULT;
+				}
+				src = src[2..$];
+				continue;
+			} else if (src[0] == '/' && src.length >= 2 && src[1] == '+') {
+				++level;
+				src = src[2..$];
 				continue;
 			} else {
 				src = src[1..$];
