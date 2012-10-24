@@ -16,16 +16,16 @@ import std.string;
 /* input: file path -> source string */
 
 
-private void error(string msg) {
+private void error(in string msg) {
 	stderr.writefln("[input|error] %s", msg);
 	exit(1);
 }
 
-private void warn(string msg) {
+private void warn(in string msg) {
 	stderr.writefln("[input|warn] %s", msg);
 }
 
-string readSource(string path) {
+string readSource(in string path) {
 	if (path.length < 3 || path[$-2..$] != ".s") {
 		error("expected a file ending in '.s'");
 	}

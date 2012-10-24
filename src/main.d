@@ -12,7 +12,7 @@ import newline;
 import pass0;
 
 
-void main(string[] args) {
+void main(in string[] args) {
 	stderr.write("asx: x86 assembler\n(c) 2012 justin gottula\n\n");
 	
 	if (args.length != 2) {
