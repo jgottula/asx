@@ -34,6 +34,11 @@ void fixNewlines(ref string src) {
 		}
 	}
 	
+	/* add newline at EOF if not present */
+	if (dst[$-1] != '\n') {
+		dst ~= '\n';
+	}
+	
 	src = cast(string)dst;
 }
 
