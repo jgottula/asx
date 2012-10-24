@@ -33,7 +33,11 @@ square:
 	pop ebp
 	ret
 
-
+/*
+ * multi
+ * line
+ * comment
+ */
 /+ nest comment +/
 /+/+ double nest comment +/+/
 /+/+/+/++/+/+/+/
