@@ -28,7 +28,9 @@ void main(in string[] args) {
 	
 	Line[] lines = doPass0(path, source);
 	
-	foreach (line; lines) {
+	foreach (ulong i, line; lines) {
+		writefln("line %d:", i + 1);
+		
 		foreach (token; line.tokens) {
 			string tag;
 			
@@ -43,9 +45,11 @@ void main(in string[] args) {
 				tag = token.tagStr;
 			}
 			
-			writefln("%s [%s] @ %s %d:%d", token.type, tag, token.origin.file,
-				token.origin.line, token.origin.col);
+			writefln("%3d:%-3d %s [%s] @ %s", token.origin.line,
+				token.origin.col, token.type, tag, token.origin.file);
 		}
+		
+		writeln();
 	}
 	
 	AsmContext ctx = doPass1(lines);
