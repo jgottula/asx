@@ -8,7 +8,6 @@ module newline;
 
 /* newline pass: { CR LF CRLF LFCR } -> LF */
 
-
 void fixNewlines(ref string src) {
 	auto dst = new char[0];
 	
@@ -36,4 +35,23 @@ void fixNewlines(ref string src) {
 	}
 	
 	src = cast(string)dst;
+}
+
+
+unittest {
+	string[] tests = [
+		"\r\n", "\n\r", "\r\r", "\n\n"
+	];
+	
+	fixNewlines(tests[0]);
+	assert(tests[0] == "\n");
+	
+	fixNewlines(tests[1]);
+	assert(tests[1] == "\n");
+	
+	fixNewlines(tests[2]);
+	assert(tests[2] == "\n\n");
+	
+	fixNewlines(tests[3]);
+	assert(tests[3] == "\n\n");
 }
