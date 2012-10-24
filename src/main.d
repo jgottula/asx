@@ -25,7 +25,7 @@ void main(in string[] args) {
 	fixNewlines(source);
 	doPass0(source);
 	
-	writeln(source);
+	writeln('|', source, '|');
 	
 	/+string source, ppSource;
 	readSource(args[1], source);
