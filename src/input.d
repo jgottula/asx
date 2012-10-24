@@ -16,22 +16,22 @@ import std.string;
 /* input: file path -> source string */
 
 
-private void error(in string msg) {
-	stderr.writefln("[input|error] %s", msg);
+private void error(in string path, in string msg) {
+	stderr.writefln("[input|error|%s] %s", path, msg);
 	exit(1);
 }
 
-private void warn(in string msg) {
-	stderr.writefln("[input|warn] %s", msg);
+private void warn(in string path, in string msg) {
+	stderr.writefln("[input|warn|%s] %s", path, msg);
 }
 
-string readSource(in string path) {
-	if (path.length < 3 || path[$-2..$] != ".s") {
-		error("expected a file ending in '.s'");
+string readSource(in string path, bool include = false) {
+	if (!include && (path.length < 3 || path[$-2..$] != ".s")) {
+		error(path, "expected a file ending in '.s'");
 	}
 	
 	if (!path.exists()) {
-		error("the source file '%s' does not exist");
+		error(path, "the file does not exist");
 	}
 	
 	File file;
@@ -40,14 +40,15 @@ string readSource(in string path) {
 		file = File(path, "r");
 	}
 	catch (ErrnoException e) {
-		error("encountered an IO error (errno = %d):\n%s".format(e.msg));
+		error(path, "encountered an IO error (errno = %d):\n%s".format(e.errno,
+			e.msg));
 	}
 	
 	file.seek(0, SEEK_END);
 	auto src = new char[file.tell()];
 	
-	if (file.tell() == 0) {
-		error("empty source file");
+	if (!include && file.tell() == 0) {
+		error(path, "empty source file");
 	}
 	
 	file.seek(0, SEEK_SET);
