@@ -229,7 +229,7 @@ private void error(in string msg) {
 	char c = ctx.get();
 	
 	if (isEscape(c)) {
-		error(msg.format(escapize(c)));
+		error(msg.format(unescapize(c)));
 	} else if (c.isPrintable()) {
 		error(msg.format(c));
 	} else {
@@ -244,7 +244,7 @@ private void warn(in string msg) {
 	char c = ctx.get();
 	
 	if (isEscape(c)) {
-		warn(msg.format(escapize(c)));
+		warn(msg.format(unescapize(c)));
 	} else if (c.isPrintable()) {
 		warn(msg.format(c));
 	} else {
@@ -288,10 +288,14 @@ Line[] doPass0(in string path, string src) {
 				ctx.state = State.DIRECTIVE;
 				ctx.saveLocation();
 				ctx.push();
+			} else if (ctx.check('"')) {
+				ctx.state = State.LITERAL_STR;
+				ctx.saveLocation();
+				ctx.advance();
 			} else if (ctx.check('\n')) {
 				ctx.advance();
 			} else {
-				/*assert(0);*/ ctx.advance();
+				error("FATAL: unhandled char: '%s'".format(ctx.get()));
 			}
 			break;
 		case State.COMMENT_BLOCK:
@@ -324,6 +328,15 @@ Line[] doPass0(in string path, string src) {
 		case State.IDENTIFIER:
 			if (ctx.match(r"^\w")) {
 				ctx.push();
+			} else if (ctx.check(':')) {
+				auto token = Token(TokenType.LABEL, ctx.loc);
+				token.tagStr = ctx.buffer.idup;
+				
+				ctx.addToken(token);
+				ctx.buffer.length = 0;
+				
+				ctx.state = State.DEFAULT;
+				ctx.advance();
 			} else {
 				auto token = Token(TokenType.IDENTIFIER, ctx.loc);
 				token.tagStr = ctx.buffer.idup;
@@ -350,7 +363,25 @@ Line[] doPass0(in string path, string src) {
 			}
 			break;
 		case State.LITERAL_STR:
-			/* ... */
+			if (ctx.check('\\')) {
+				if (isEscapeStr(ctx.get(2))) {
+					ctx.buffer ~= escapize(ctx.get(2));
+					ctx.advance(2);
+				} else {
+					error("invalid escape sequence");
+				}
+			} else if (ctx.check('"')) {
+				auto token = Token(TokenType.LITERAL_STR, ctx.loc);
+				token.tagStr = ctx.buffer.idup;
+				
+				ctx.addToken(token);
+				ctx.buffer.length = 0;
+				
+				ctx.state = State.DEFAULT;
+				ctx.advance();
+			} else {
+				ctx.push();
+			}
 			break;
 		case State.LITERAL_INT:
 			/* ... */
