@@ -15,7 +15,6 @@ enum PPState {
 	HASH, PPEND,
 	INCLUDE, INCLUDE_STR,
 	STRING,
-	CHAR,
 }
 
 PPState state;
@@ -49,8 +48,6 @@ void preprocessSource(in string original, out string processed) {
 				continue;
 			} else if (src[0] == '"') {
 				state = PPState.STRING;
-			} else if (src[0] == '\'') {
-				state = PPState.CHAR;
 			}
 		} else if (state == PPState.COMMENT_BLOCK) {
 			if (src[0] == '*' && src.length >= 2 && src[1] == '/') {
@@ -136,17 +133,6 @@ void preprocessSource(in string original, out string processed) {
 						"incomplete escape sequence\n");
 				}
 			} else if (src[0] == '"') {
-				state = PPState.DEFAULT;
-			}
-		} else if (state == PPState.CHAR) {
-			if (src[0] == '\\') {
-				if (src.length >= 2) {
-					src = src[1..$];
-				} else {
-					stderr.write("[preproc|error] " ~
-						"incomplete escape sequence\n");
-				}
-			} else if (src[0] == '\'') {
 				state = PPState.DEFAULT;
 			}
 		} else {
