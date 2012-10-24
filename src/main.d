@@ -52,7 +52,7 @@ void main(in string[] args) {
 		writeln();
 	}
 	
-	AsmContext ctx = doPass1(lines);
+	doPass1(lines);
 	
 	/+string source, ppSource;
 	readSource(args[1], source);

@@ -13,6 +13,7 @@ import std.string;
 import escape;
 import input;
 import newline;
+import pass1;
 import register;
 
 
@@ -36,6 +37,7 @@ public enum TokenType {
 	MULTIPLY,
 	DIVIDE,
 	MODULO,
+	EXPRESSION,
 }
 
 public struct TokenLocation {
@@ -44,6 +46,10 @@ public struct TokenLocation {
 }
 
 public struct Token {
+	this(TokenType type) {
+		this.type = type;
+		this.origin = TokenLocation();
+	}
 	this(TokenType type, TokenLocation origin) {
 		this.type = type;
 		this.origin = origin;
@@ -55,6 +61,7 @@ public struct Token {
 		ulong tagInt;
 		string tagStr;
 		Register tagReg;
+		Expression tagExpr;
 	}
 }
 
@@ -207,8 +214,7 @@ Line[] doPass0(in string path, string src) {
 	ctx = new Context(path, src);
 	
 	while (!ctx.eof()) {
-		warn("TODO: specially handle line continuation character here");
-		/* \\\n */
+		/* specially handle line continuation character here */
 		
 		final switch (ctx.state) {
 		case State.DEFAULT:
