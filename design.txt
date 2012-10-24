@@ -28,6 +28,7 @@ assembler syntax
     - .include "filename"
   - symbols, conditional:
     - .def name value
+    - .undef name
     - .if name|value
     - .ifdef name
     - .ifndef name
