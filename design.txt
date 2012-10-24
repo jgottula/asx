@@ -1,6 +1,14 @@
 design
 
 
+TODO: use vertical whiteboard to determine overall assembler structure:
+- preprocessor
+- pass 1
+- pass 2
+- backend
+- etc.
+
+
 program arguments
 
 - target architecture
@@ -61,8 +69,8 @@ assembler syntax
   - indirect:  [eax]
   - indexed:   [eax+4]
   - sized:     [4*eax+4]
-  - postinc:   [...]++
-  - predec:  --[...]
+  - postinc:   [...]++   (if applicable)
+  - predec:  --[...]     (if applicable)
 - macros
   - should have C-style macro replacement (functions)
   - should have do-this-n-times (loops)
