@@ -16,6 +16,8 @@ main:
 	call printf
 	add 8,esp
 	
+	call ambiguous
+	
 	xor eax,eax
 	ret
 
@@ -31,6 +33,15 @@ square:
 	
 	mov ebp,esp
 	pop ebp
+	ret
+
+/* demonstrates size-ambiguous behavior */
+ambiguous:
+	movl 1,[eax]
+	movw 1,[eax]
+	movb 1,[eax]
+	mov  1,eax   // invalid, ambiguous
+	
 	ret
 
 /*

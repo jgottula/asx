@@ -36,18 +36,21 @@ assembler syntax
     - .elif name|value
     - .endif
   - data:
-    - .byte
-    - .word
-    - .dword
-    - .qword
-    - .dqword
+    - .byte val
+    - .word val
+    - .dword val
+    - .qword val
+    - .dqword val
+    - .range start end [-]increment
   - strings:
-    - .str
-    - .strz
+    - .str string
+    - .strz string+0
   - alignment:
-    - .align
+    - .align value
   - addressing:
-    - .org
+    - .org addr
+  - sections:
+    - .section sect
 - instructions
   - opcodes must be lowercase
   - in situations where size is ambiguous, a character must be appended to the
@@ -61,7 +64,8 @@ assembler syntax
     - bin starts with 0b
     - no suffixes
   - negative integers are treated as two's compliment numbers
-  - size and sign extension will be handled automatically
+  - integer size will be as large as possible by default, and then narrowed down
+    as necessary where used
 - registers
   - register names must be lowercase
   - no prefix
