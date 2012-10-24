@@ -1,0 +1,16 @@
+TODO
+
+- escape.d
+  - octal escape sequences
+  - hex escape sequences
+- pass0.d
+  - octal literals
+  - hex literals
+  - bin literals
+  - line continuation ("\\\n")
+- pass1.d
+  - file inclusion (when the .include token is encountered, load the file, lex
+    separately, then insert its tokens into the current file's array; do this
+    recursively)
+  - expression handling
+- pass2.d
