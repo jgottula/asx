@@ -7,6 +7,7 @@ module pass0;
 
 import std.ascii;
 import std.c.stdlib;
+import std.regex;
 import std.stdio;
 import std.string;
 import escape;
@@ -14,30 +15,61 @@ import input;
 import newline;
 
 
-/* pass0: src -> src (comments, includes, defs, ifs, macros) */
+/* pass0: strip comments, lex */
 
+
+public enum TokenType {
+	IDENTIFIER,
+	DIRECTIVE,
+	LABEL,
+	LITERAL_STR,
+	LITERAL_INT,
+}
+
+public struct TokenLocation {
+	string file;
+	ulong line, col;
+}
+
+public struct Token {
+	this(TokenType type, TokenLocation origin) {
+		this.type = type;
+		this.origin = origin;
+	}
+	
+	TokenType type;
+	TokenLocation origin;
+	union {
+		string tagStr;
+	}
+}
+
+public struct Line {
+	Token[] tokens;
+}
 
 private enum State {
 	DEFAULT,
 	COMMENT_BLOCK,
 	COMMENT_NEST,
 	COMMENT_LINE,
-	DIR_INCLUDE,
-	DIR_INCLUDE_STR,
-	DIR_INCLUDE_DONE,
+	IDENTIFIER,
+	DIRECTIVE,
+	LITERAL_STR,
+	LITERAL_INT,
 }
 
 private class Context {
-	this(in string src) {
+	this(in string filename, in string src) {
+		this.filename = filename;
 		this.src = src;
-		this.dst = new char[0];
+		
+		this.lines = new Line[1];
 		
 		this.state = State.DEFAULT;
 		
 		this.line = 1;
 		this.col = 1;
-		
-		this.buffer = new char[0];
 		
 		this.commentLevel = 0;
 	}
@@ -70,7 +102,7 @@ private class Context {
 		}
 	}
 	
-	bool white(ulong count = 1) {
+	/+bool white(ulong count = 1) {
 		assert(count != 0);
 		if (count > src.length) {
 			return false;
@@ -83,6 +115,10 @@ private class Context {
 		}
 		
 		return true;
+	}+/
+	
+	bool match(in string regex) {
+		return !(src.match(regex).empty());
 	}
 	
 	bool eof() {
@@ -100,13 +136,13 @@ private class Context {
 	
 	/* TODO: upon append, annotate with the src line/col (and filename) so that
 	 * later steps may have proper line/col */
-	void put(in string buf) {
+	/+void put(in string buf) {
 		assert(buf.length != 0);
 		dst ~= buf;
 	}
 	void put(in char c) {
 		dst ~= c;
-	}
+	}+/
 	
 	void push(ulong count = 1) {
 		assert(count != 0);
@@ -116,43 +152,70 @@ private class Context {
 		advance(count);
 	}
 	
-	void echo(ulong count = 1) {
+	/+void echo(ulong count = 1) {
 		assert(count != 0);
 		assert(count <= src.length);
 		
 		put(src[0..count]);
 		advance(count);
-	}
+	}+/
 	
 	void advance(ulong count = 1) {
 		assert(count != 0);
 		assert(count <= src.length);
 		
-		++col; // todo: line
+		for (ulong i = 0; i < count; ++i) {
+			if (src[i] == '\n') {
+				++line;
+				col = 1;
+				
+				++lines.length;
+			} else {
+				++col;
+			}
+		}
 		
 		src = src[count..$];
 	}
 	
-	void insert(in string ins) {
+	/+void insert(in string ins) {
 		src = ins ~ src;
 	}
 	
 	string finished() {
 		return cast(string)dst;
+	}+/
+	
+	TokenLocation getLocation() {
+		return TokenLocation(filename, line, col);
+	}
+	
+	void saveLocation() {
+		loc = TokenLocation(filename, line, col);
+	}
+	
+	void addToken(in Token t) {
+		lines[line - 1].tokens ~= t;
+	}
+	
+	Line[] getLines() {
+		return lines;
 	}
 	
 	State state;
 	
+	string filename;
 	ulong line;
 	ulong col;
 	
-	char[] buffer;
-	
 	ulong commentLevel;
+	
+	char[] buffer;
+	TokenLocation loc;
 	
 private:
 	string src;
-	char[] dst;
+	Line[] lines;
 }
 
 Context ctx;
@@ -162,7 +225,7 @@ private void error(in string msg) {
 	stderr.writefln("[pass0|error|%d:%d] %s", ctx.line, ctx.col, msg);
 	exit(1);
 }
-private void errorChar(in string msg) {
+/+private void errorChar(in string msg) {
 	char c = ctx.get();
 	
 	if (isEscape(c)) {
@@ -172,12 +235,12 @@ private void errorChar(in string msg) {
 	} else {
 		error(msg.format("???"));
 	}
-}
+}+/
 
 private void warn(in string msg) {
 	stderr.writefln("[pass0|warn|%d:%d] %s", ctx.line, ctx.col, msg);
 }
-private void warnChar(in string msg) {
+/+private void warnChar(in string msg) {
 	char c = ctx.get();
 	
 	if (isEscape(c)) {
@@ -187,10 +250,9 @@ private void warnChar(in string msg) {
 	} else {
 		warn(msg.format("???"));
 	}
-}
+}+/
 
-
-private void include() {
+/+private void include() {
 	/* TODO: provide a mechanism whereby the include file's line/col information
 	 * can be preserved */
 	
@@ -198,15 +260,17 @@ private void include() {
 	fixNewlines(incSource);
 	
 	ctx.insert(incSource);
-}
+}+/
 
-void doPass0(ref string src) {
-	ctx = new Context(src);
+Line[] doPass0(in string path, string src) {
+	ctx = new Context(path, src);
 	
-	while (ctx.avail() > 0) {
+	while (!ctx.eof()) {
 		final switch (ctx.state) {
 		case State.DEFAULT:
-			if (ctx.check("/*")) {
+			if (ctx.check(' ') || ctx.check('\t')) {
+				ctx.advance();
+			} else if (ctx.check("/*")) {
 				ctx.state = State.COMMENT_BLOCK;
 				ctx.advance(2);
 			} else if (ctx.check("/+")) {
@@ -216,11 +280,18 @@ void doPass0(ref string src) {
 			} else if (ctx.check("//")) {
 				ctx.state = State.COMMENT_LINE;
 				ctx.advance(2);
-			} else if (ctx.check(".include")) {
-				ctx.state = State.DIR_INCLUDE;
-				ctx.advance(8);
+			} else if (ctx.match(r"^\w")) {
+				ctx.state = State.IDENTIFIER;
+				ctx.saveLocation();
+				goto case State.IDENTIFIER;
+			} else if (ctx.match(r"^\.\w")) {
+				ctx.state = State.DIRECTIVE;
+				ctx.saveLocation();
+				ctx.push();
+			} else if (ctx.check('\n')) {
+				ctx.advance();
 			} else {
-				ctx.echo();
+				/*assert(0);*/ ctx.advance();
 			}
 			break;
 		case State.COMMENT_BLOCK:
@@ -228,9 +299,6 @@ void doPass0(ref string src) {
 				ctx.state = State.DEFAULT;
 				ctx.advance(2);
 			} else {
-				if (ctx.check('\n')) {
-					ctx.echo();
-				}
 				ctx.advance();
 			}
 			break;
@@ -244,51 +312,48 @@ void doPass0(ref string src) {
 				}
 				ctx.advance(2);
 			} else {
-				if (ctx.check('\n')) {
-					ctx.echo();
-				}
 				ctx.advance();
 			}
 			break;
 		case State.COMMENT_LINE:
 			if (ctx.check('\n')) {
 				ctx.state = State.DEFAULT;
-				ctx.echo();
-			} else {
-				ctx.advance();
 			}
+			ctx.advance;
 			break;
-		case State.DIR_INCLUDE:
-			if (ctx.white()) {
-				ctx.advance();
-			} else if (ctx.check('"')) {
-				ctx.state = State.DIR_INCLUDE_STR;
-				ctx.buffer.length = 0;
-				ctx.advance();
-			} else {
-				errorChar("unexpected character in .include directive: '%s'");
-			}
-			break;
-		case State.DIR_INCLUDE_STR:
-			if (ctx.check('"')) {
-				ctx.state = State.DIR_INCLUDE_DONE;
-				ctx.advance();
-			} else if (ctx.check('\n')) {
-				errorChar("unexpected newline in .include directive");
-			} else {
+		case State.IDENTIFIER:
+			if (ctx.match(r"^\w")) {
 				ctx.push();
+			} else {
+				auto token = Token(TokenType.IDENTIFIER, ctx.loc);
+				token.tagStr = ctx.buffer.idup;
+				
+				ctx.addToken(token);
+				ctx.buffer.length = 0;
+				
+				ctx.state = State.DEFAULT;
+				goto case State.DEFAULT;
 			}
 			break;
-		case State.DIR_INCLUDE_DONE:
-			if (ctx.white()) {
-				ctx.echo();
-			} else if (ctx.check('\n')) {
-				ctx.state = State.DEFAULT;
-				ctx.advance();
-				include();
+		case State.DIRECTIVE:
+			if (ctx.match(r"^\w")) {
+				ctx.push();
 			} else {
-				errorChar("unexpected character after directive: '%s'");
+				auto token = Token(TokenType.DIRECTIVE, ctx.loc);
+				token.tagStr = ctx.buffer.idup;
+				
+				ctx.addToken(token);
+				ctx.buffer.length = 0;
+				
+				ctx.state = State.DEFAULT;
+				goto case State.DEFAULT;
 			}
+			break;
+		case State.LITERAL_STR:
+			/* ... */
+			break;
+		case State.LITERAL_INT:
+			/* ... */
 			break;
 		}
 	}
@@ -305,12 +370,18 @@ void doPass0(ref string src) {
 	case State.COMMENT_NEST:
 		error("unterminated nest comment at EOF");
 		break;
-	case State.DIR_INCLUDE:
-	case State.DIR_INCLUDE_STR:
-	case State.DIR_INCLUDE_DONE:
-		error("unfinished .include directive at EOF");
+	case State.LITERAL_STR:
+		error("unterminated string literal at EOF");
 		break;
+		/* the source file is guaranteed to end with a newline, so the following
+		 * cases should never happen */
+	case State.IDENTIFIER:
+		assert(0);
+	case State.DIRECTIVE:
+		assert(0);
+	case State.LITERAL_INT:
+		assert(0);
 	}
 	
-	src = ctx.finished();
+	return ctx.getLines();
 }

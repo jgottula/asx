@@ -20,12 +20,19 @@ void main(in string[] args) {
 		exit(1);
 	}
 	
-	string source = readSource(args[1]);
-	
+	string path = args[1];
+	string source = readSource(path);
 	fixNewlines(source);
-	doPass0(source);
 	
-	writeln('|', source, '|');
+	Line[] lines = doPass0(path, source);
+	
+	foreach (line; lines) {
+		foreach (token; line.tokens) {
+			writefln("type: %s origin: %s %d:%d [%s]", token.type,
+				token.origin.file, token.origin.line, token.origin.col,
+				token.tagStr);
+		}
+	}
 	
 	/+string source, ppSource;
 	readSource(args[1], source);
