@@ -1,0 +1,78 @@
+design
+
+
+program arguments
+
+- target architecture
+- output format (a.out, coff, elf, ...)
+
+
+assembler syntax
+
+- comments
+  - line comment: //
+  - block comment: /* */
+  - nesting block comment: /+ /+ +/ +/
+- directives
+  - all are prefixed with a dot
+  - must be lowercase
+  - file inclusion:
+    - .include "filename"
+  - symbols, conditional:
+    - .def name value
+    - .if name|value
+    - .ifdef name
+    - .ifndef name
+    - .else
+    - .elif name|value
+    - .endif
+  - data:
+    - .byte
+    - .word
+    - .dword
+    - .qword
+    - .dqword
+  - strings:
+    - .str
+    - .strz
+  - alignment:
+    - .align
+  - addressing:
+    - .org
+- instructions
+  - opcodes must be lowercase
+  - in situations where size is ambiguous, a character must be appended to the
+    opcode: b for byte, w for word, l for dword
+  - operands are in source, destination order
+- integers
+  - integers behave mostly as in C11:
+    - dec starts with nonzero
+    - oct starts with 0
+    - hex starts with 0x
+    - bin starts with 0b
+    - no suffixes
+  - negative integers are treated as two's compliment numbers
+  - size and sign extension will be handled automatically
+- registers
+  - register names must be lowercase
+  - no prefix
+  - suffix for size in ambiguous situations
+- effective addresses
+  - indirect:  [eax]
+  - indexed:   [eax+4]
+  - sized:     [4*eax+4]
+  - postinc:   [...]++
+  - predec:  --[...]
+- macros
+  - should have C-style macro replacement (functions)
+  - should have do-this-n-times (loops)
+- output
+  - possibly user-chooseable
+  - one of the object formats that ld understands
+  - possible formats:
+    - a.out
+    - coff
+    - elf
+
+
+TODO: scour the gas documentation for useful directives, macro ideas, etc.
