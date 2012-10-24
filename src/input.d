@@ -10,41 +10,48 @@ import std.conv;
 import std.exception;
 import std.file;
 import std.stdio;
+import std.string;
 
 
-void readSource(in string inputPath, out string fileContents) {
-	if (inputPath.length < 3 || inputPath[$-2..$] != ".s") {
-		stderr.write("[input|error] expected a file ending in '.s'\n");
-		exit(1);
+/* input: file path -> source string */
+
+
+private void error(string msg) {
+	stderr.writefln("[input|error] %s", msg);
+	exit(1);
+}
+
+private void warn(string msg) {
+	stderr.writefln("[input|warn] %s", msg);
+}
+
+string readSource(string path) {
+	if (path.length < 3 || path[$-2..$] != ".s") {
+		error("expected a file ending in '.s'");
 	}
 	
-	if (!inputPath.exists()) {
-		stderr.writef("[input|error] the source file '%s' does not exist\n",
-			inputPath);
-		exit(1);
+	if (!path.exists()) {
+		error("the source file '%s' does not exist");
 	}
 	
-	File inputFile;
+	File file;
 	
 	try {
-		inputFile = File(inputPath, "r");
+		file = File(path, "r");
 	}
 	catch (ErrnoException e) {
-		stderr.writef("[input|error] encountered an IO error " ~
-			"(errno = %d):\n%s\n", e.errno, e.msg);
-		exit(1);
+		error("encountered an IO error (errno = %d):\n%s".format(e.msg));
 	}
 	
-	inputFile.seek(0, SEEK_END);
-	char[] buffer = new char[inputFile.tell()];
+	file.seek(0, SEEK_END);
+	auto src = new char[file.tell()];
 	
-	if (inputFile.tell() == 0) {
-		stderr.writef("[input|error] empty source file\n");
-		exit(1);
+	if (file.tell() == 0) {
+		error("empty source file");
 	}
 	
-	inputFile.seek(0, SEEK_SET);
-	inputFile.rawRead(buffer);
+	file.seek(0, SEEK_SET);
+	file.rawRead(src);
 	
-	fileContents = to!string(buffer);
+	return cast(string)src;
 }

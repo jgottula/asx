@@ -8,7 +8,8 @@ module main;
 import std.c.stdlib;
 import std.stdio;
 import input;
-import preprocess;
+import newline;
+import pass0;
 
 
 void main(string[] args) {
@@ -19,9 +20,16 @@ void main(string[] args) {
 		exit(1);
 	}
 	
-	string source, ppSource;
+	string source = readSource(args[1]);
+	
+	fixNewlines(source);
+	doPass0(source);
+	
+	writeln(source);
+	
+	/+string source, ppSource;
 	readSource(args[1], source);
 	preprocessSource(source, ppSource);
 	
-	writeln(ppSource);
+	writeln(ppSource);+/
 }
