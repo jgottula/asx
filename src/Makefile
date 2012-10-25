@@ -12,10 +12,9 @@ LIBS:=
 
 # evaluated when used
 SOURCES=$(wildcard *.d)
-OBJECTS=$(patsubst %.d,%.o,$(SOURCES))
 EXE=asx
 DOCDIR=../doc
-CLEAN=$(wildcard $(EXE)) $(wildcard *.o) $(wildcard $(DOCDIR)/*.html)
+CLEAN=$(wildcard $(EXE)) $(wildcard $(DOCDIR)/*.html)
 
 
 .PHONY: all clean
@@ -24,10 +23,7 @@ CLEAN=$(wildcard $(EXE)) $(wildcard *.o) $(wildcard $(DOCDIR)/*.html)
 all: $(EXE)
 
 $(EXE): $(OBJECTS) Makefile
-	$(DC) $(DFLAGS) $(LIBS) -of=$@ $(OBJECTS)
-
-%.o: %.d Makefile
-	$(DC) $(DFLAGS) $(IMPORTS) -Dd=$(DOCDIR) -of=$@ -c $<
+	$(DC) $(DFLAGS) $(LIBS) -Dd=$(DOCDIR) -of=$@ $(SOURCES)
 
 clean:
 	rm -f $(CLEAN)
