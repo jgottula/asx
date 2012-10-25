@@ -176,7 +176,7 @@ private class Context {
 	}
 	
 	void addToken(Token t) {
-		lines[line - 1].tokens ~= t;
+		lines[line-1].tokens ~= t;
 	}
 	
 	Line[] getLines() {

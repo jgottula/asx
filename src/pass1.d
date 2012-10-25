@@ -134,9 +134,10 @@ private Token[] getExpr(Token[] tokens, out Expression expr) {
 private Integer evalExprNoLabels(Expression expr) {
 	try {
 		return expr.evalNoLabels(ctx.symTable);
-	} catch (ExprEvalException e) {
-		error(e.origin, "unspecified expression evaluation error");
-	}
+	} catch (EvalException e) {
+		error(e.token.origin, "unspecified expression evaluation error");
+	} /* TODO: ensure that all exception types are here */
+	/* use e.token.type for better messages */
 	
 	return Integer(Sign.POSITIVE, 0);
 }
