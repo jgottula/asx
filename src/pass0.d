@@ -26,8 +26,8 @@ public enum TokenType {
 	DIRECTIVE,
 	LABEL,
 	REGISTER,
-	LITERAL_STR,
-	LITERAL_INT,
+	INTEGER,
+	STRING,
 	COMMA,
 	BRACKET_L,
 	BRACKET_R,
@@ -59,9 +59,9 @@ public struct Token {
 	TokenType type;
 	TokenLocation origin;
 	union {
-		ulong tagInt;
 		string tagStr;
 		Register tagReg;
+		Integer tagInt;
 		Expression *tagExpr;
 	}
 }
@@ -367,7 +367,7 @@ Line[] doPass0(in string path, string src) {
 					error("invalid escape sequence");
 				}
 			} else if (ctx.check('"')) {
-				auto token = Token(TokenType.LITERAL_STR, ctx.loc);
+				auto token = Token(TokenType.STRING, ctx.loc);
 				token.tagStr = ctx.buffer.idup;
 				
 				ctx.addToken(token);
@@ -390,8 +390,8 @@ Line[] doPass0(in string path, string src) {
 					x += ctx.buffer[i] - '0';
 				}
 				
-				auto token = Token(TokenType.LITERAL_INT, ctx.loc);
-				token.tagInt = x;
+				auto token = Token(TokenType.INTEGER, ctx.loc);
+				token.tagInt = Integer(Sign.POSITIVE, x);
 				
 				ctx.addToken(token);
 				ctx.buffer.length = 0;

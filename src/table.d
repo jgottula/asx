@@ -5,5 +5,9 @@
  */
 module table;
 
+import expression;
 
 
+public class SymbolTable {
+	Integer[string] symbols;
+}

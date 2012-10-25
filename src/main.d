@@ -35,7 +35,7 @@ void main(in string[] args) {
 			string tag;
 			
 			switch (token.type) {
-			case TokenType.LITERAL_INT:
+			case TokenType.INTEGER:
 				tag = token.tagInt.to!string();
 				break;
 			case TokenType.REGISTER:

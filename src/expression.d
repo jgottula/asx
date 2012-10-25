@@ -6,8 +6,13 @@
 module expression;
 
 import std.container;
+/* vvv remove me vvv*/
+import std.conv;
+import std.stdio;
+/* ^^^ remove me ^^^ */
 import pass0;
 import pass1;
+import table;
 
 
 public enum Sign {
@@ -62,6 +67,12 @@ public class ExprUnmatchedParenRException : ExprException {
 	}
 }
 
+public class ExprEvalException : ExprException {
+	this(TokenLocation origin) {
+		super(origin);
+	}
+}
+
 public class Expression {
 	this(Token[] tokens, ulong level = 0) {
 		list = DList!Token(new Token[0]);
@@ -88,7 +99,7 @@ public class Expression {
 				length = i + 1;
 				return;
 			case TokenType.IDENTIFIER:
-			case TokenType.LITERAL_INT:
+			case TokenType.INTEGER:
 			case TokenType.ADD:
 			case TokenType.SUBTRACT:
 			case TokenType.MULTIPLY:
@@ -100,11 +111,11 @@ public class Expression {
 			case TokenType.DIRECTIVE:
 			case TokenType.LABEL:
 			case TokenType.REGISTER:
-			case TokenType.LITERAL_STR:
+			case TokenType.STRING:
 			case TokenType.COMMA:
 			case TokenType.BRACKET_L:
 			case TokenType.BRACKET_R:
-				length = i + 1;
+				length = i;
 				goto done;
 			}
 		}
@@ -120,69 +131,47 @@ public class Expression {
 		
 	}
 	
-	Integer evaluate(in Integer[string] symbols) {
-		return Integer(Sign.POSITIVE, 0);
+	Integer evalNoLabels(in SymbolTable symTable) {
+		/* replace Expressions with Integers by evaluating them recursively */
+		foreach (ref token; list) {
+			if (token.type == TokenType.EXPRESSION) {
+				auto newToken = Token(TokenType.INTEGER,
+					token.tagExpr.list.front().origin);
+				newToken.tagInt = token.tagExpr.evalNoLabels(symTable);
+				
+				token = newToken;
+			}
+		}
+		
+		foreach (token; list) {
+			string tag;
+			
+			switch (token.type) {
+			case TokenType.INTEGER:
+				tag = token.tagInt.to!string();
+				break;
+			case TokenType.REGISTER:
+				tag = token.tagReg.to!string();
+				break;
+			default:
+				tag = token.tagStr;
+			}
+			
+			writefln("%3d:%-3d %s [%s] @ %s", token.origin.line,
+				token.origin.col, token.type, tag, token.origin.file);
+		}
+		
+		
+		return Integer();
 	}
 	
 	ulong length;
 	
 private:
-	Integer subEval(in Integer[string] symbols) {
-		return Integer(Sign.POSITIVE, 0);
-	}
-	
 	DList!Token list;
 }
 
 /+
-
-private Expression evalExpr(in Token[] tokens) {
-	auto expr = Expression(Sign.POSITIVE, 0);
-	DList!Token[] parenStack = [DList!Token(new Token[0])];
-	
-	foreach (token; tokens) {
-		switch (token.type) {
-		case TokenType.PAREN_L:
-			parenStack ~= DList!Token(new Token[0]);
-			break;
-		case TokenType.PAREN_R:
-			if (parenStack[$-1].empty()) {
-				error(token.origin, "empty parentheses");
-			} else {
-				if (parenStack.length == 1) {
-					error(token.origin, "unmatched close parenthesis");
-				}
-				
-				auto sub = subExpr(parenStack[$-1]);
-				
-				--parenStack.length;
-				
-				auto t = Token(TokenType.EXPRESSION,
-					TokenLocation("null", 0, 0));
-				t.tagExpr = sub;
-				parenStack[$-1].insertBack(t);
-			}
-			break;
-		case TokenType.IDENTIFIER:
-		case TokenType.LITERAL_INT:
-		case TokenType.ADD:
-		case TokenType.SUBTRACT:
-		case TokenType.MULTIPLY:
-		case TokenType.DIVIDE:
-		case TokenType.MODULO:
-			parenStack[$-1].insertBack(token);
-			break;
-		default:
-			/* check that we had at least one token previous to this */
-			/* halt evaluation: check if the paren stack has one member only */
-			/* then, run subExpr on the last stack member */
-			/* and, remove all the tokens used in the expression */
-		}
-	}
-	
-	return expr;
-}
-
 private Expression subExpr(ref DList!Token tokens) {
 	bool init = false;
 	Expression expr;

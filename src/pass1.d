@@ -12,6 +12,7 @@ import std.string;
 import expression;
 import instruction;
 import pass0;
+import table;
 
 
 /* pass1: symbol table, label addrs, expression loading, some directives */
@@ -88,8 +89,8 @@ private class Context {
 		return statements;
 	}
 	
+	SymbolTable symTable;
 	Location[string] labels;
-	Integer[string] symbols;
 	
 private:
 	ulong line;
@@ -130,8 +131,12 @@ private Token[] getExpr(Token[] tokens, out Expression expr) {
 	return tokens[expr.length..$];
 }
 
-private Integer evalExprNoLabels(in Expression e) {
-	
+private Integer evalExprNoLabels(Expression expr) {
+	try {
+		return expr.evalNoLabels(ctx.symTable);
+	} catch (ExprEvalException e) {
+		error(e.origin, "unspecified expression evaluation error");
+	}
 	
 	return Integer(Sign.POSITIVE, 0);
 }
@@ -251,8 +256,8 @@ lineLoop:
 			
 			break;
 		case TokenType.REGISTER:
-		case TokenType.LITERAL_STR:
-		case TokenType.LITERAL_INT:
+		case TokenType.INTEGER:
+		case TokenType.STRING:
 		case TokenType.COMMA:
 		case TokenType.BRACKET_L:
 		case TokenType.BRACKET_R:
