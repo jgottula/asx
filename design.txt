@@ -1,12 +1,11 @@
 design
 
 
-TODO: use vertical whiteboard to determine overall assembler structure:
-- preprocessor
-- pass 1
-- pass 2
-- backend
-- etc.
+steps
+
+- input: loads from file
+- newline: convert all newlines to LF, ensure LF at EOF
+- pass0: remove comments, tokenize
 
 
 program arguments
