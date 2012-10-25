@@ -27,24 +27,25 @@ public struct Location {
 }
 
 public enum StatementType {
+	DATA,
 	DIRECTIVE,
 }
 
-public enum DirectiveType {
-	BYTE,
-}
+/+public enum DirectiveType {
+	
+}+/
 
 public struct DataStatement {
 	byte[] bytes;
 }
 
-public struct DirectiveStatement {
+/+public struct DirectiveStatement {
 	DirectiveType type;
 	
 	union {
 		
 	}
-}
+}+/
 
 public struct Statement {
 	StatementType type;
@@ -53,7 +54,7 @@ public struct Statement {
 	
 	union {
 		DataStatement data;
-		DirectiveStatement dir;
+		/+DirectiveStatement dir;+/
 	}
 }
 
@@ -110,70 +111,106 @@ private void warn(in TokenLocation l, in string msg) {
 	stderr.writefln("[pass1|warn|%d:%d] %s", l.line, l.col, msg);
 }
 
-private void directiveByte() {
-	/+Token[] tokens = ctx.getLine().tokens[1..$];
-	bool hasQuantity = false;
-	
-	if (tokens.length == 0) {
-		error(ctx.getLine().tokens[0].origin,
-			"expected value parameter for .byte directive");
+private Token[] getExpr(Token[] tokens, out Expression expr) {
+	try {
+		expr = new Expression(tokens);
+	} catch (ExprEmptyException e) {
+		error(e.origin, "empty expression");
+	} catch (ExprEmptyParenException e) {
+		error(e.origin, "empty parentheses");
+	} catch (ExprUnmatchedParenLException e) {
+		error(e.origin, "unmatched '('");
+	} catch (ExprUnmatchedParenRException e) {
+		error(e.origin, "unmatched ')'");
+	} catch (ExprException e) {
+		error(e.origin, "unspecified expression error");
 	}
 	
-	TokenLocation valueLoc = tokens[0].origin;
-	TokenLocation quantityLoc;
+	/* tokens AFTER the expression */
+	return tokens[expr.length..$];
+}
+
+private Integer evalExprNoLabels(in Expression e) {
 	
-	Expression exprValue = evalExpr(tokens);
-	Expression exprQuantity;
 	
-	if (tokens.length > 0) {
-		if (tokens[0].type == TokenType.COMMA) {
-			hasQuantity = true;
-			quantityLoc = tokens[0].origin;
+	return Integer(Sign.POSITIVE, 0);
+}
+
+private void directiveByte() {
+	Token[] tokens = ctx.getLine().tokens;
+	bool hasQuantity = false;
+	
+	if (tokens.length == 1) {
+		error(tokens[0].origin, "expected value parameter for .byte directive");
+	}
+	
+	Expression exprValue, exprQuantity;
+	Integer intValue, intQuantity;
+	TokenLocation locValue, locQuantity;
+	
+	Token[] tokValue = tokens[1..$];
+	Token[] tokPostValue = getExpr(tokValue, exprValue);
+	locValue = tokValue[0].origin;
+	
+	if (tokPostValue.length > 0) {
+		if (tokPostValue[0].type == TokenType.COMMA) {
+			Token[] tokQuantity = tokPostValue[1..$];
 			
-			exprQuantity = evalExpr(tokens);
-			
-			if (tokens.length > 0) {
-				error(tokens[0].origin,
-					"unexpected %s after .byte directive".format(
-					tokens[0].type.to!string()));
+			if (tokQuantity.length > 0) {
+				hasQuantity = true;
+				Token[] tokPostQuantity = getExpr(tokQuantity, exprQuantity);
+				locQuantity = tokQuantity[0].origin;
+				
+				if (tokPostQuantity.length > 0) {
+					error(tokPostQuantity[0].origin,
+						"unexpected %s after .byte directive".format(
+						tokPostQuantity[0].type.to!string()));
+				}
+			} else {
+				error(tokPostValue[0].origin,
+					"expected quantity parameter for .byte directive");
 			}
 		} else {
-			error(tokens[0].origin, "unexpected %s in .byte directive".format(
-				tokens[0].type.to!string()));
+			error(tokPostValue[0].origin,
+				"unexpected %s in .byte directive".format(
+				tokPostValue[0].type.to!string()));
 		}
 	}
 	
-	if (exprValue.sign != Sign.POSITIVE) {
-		error(valueLoc, "value for .byte cannot be negative");
-	} else if (exprValue.value > byte.max) {
-		error(valueLoc, "value for .byte must be in the range [%d,%d]".format(
+	intValue = evalExprNoLabels(exprValue);
+	
+	if (intValue.sign != Sign.POSITIVE) {
+		error(locValue, "value for .byte cannot be negative");
+	} else if (intValue.value > byte.max) {
+		error(locValue, "value for .byte must be in the range [%d,%d]".format(
 			byte.min, byte.max));
 	}
 	
-	byte value = cast(byte)exprValue.value;
+	byte value = cast(byte)intValue.value;
 	ulong quantity = 1;
 	
 	if (hasQuantity) {
-		if (exprQuantity.sign != Sign.POSITIVE) {
-			error(quantityLoc, "quantity for .byte cannot be negative");
-		} else if (exprQuantity.value == 0) {
-			error(quantityLoc, "quantity for .byte cannot be zero");
+		intQuantity = evalExprNoLabels(exprQuantity);
+		
+		if (intQuantity.sign != Sign.POSITIVE) {
+			error(locValue, "quantity for .byte cannot be negative");
+		} else if (intQuantity.value == 0) {
+			error(locValue, "quantity for .byte cannot be zero");
 		}
 		
-		quantity = exprQuantity.value;
+		quantity = intQuantity.value;
 	}
 	
-	auto aLine =
-		AnnotatedLine(LineType.DATA, Location(ctx.section, ctx.offset));
-	aLine.data.loc = ctx.getLine().tokens[0].origin;
-	aLine.data.data = new byte[quantity];
-	aLine.data.data[] = value;
+	stderr.writefln(".byte: %x [%d]", value, quantity);
 	
-	ctx.addALine(aLine);
+	auto data = new byte[quantity];
 	
-	ctx.offset += quantity;+/
+	auto st = Statement(StatementType.DATA, Location(ctx.section, ctx.offset),
+		tokens[0].origin);
+	st.data = DataStatement(data);
 	
-	
+	ctx.addStatement(st);
+	ctx.offset += quantity;
 }
 
 Statement[] doPass1(Line[] lines) {
