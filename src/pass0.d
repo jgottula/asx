@@ -11,6 +11,7 @@ import std.regex;
 import std.stdio;
 import std.string;
 import escape;
+import expression;
 import input;
 import newline;
 import pass1;
@@ -61,7 +62,7 @@ public struct Token {
 		ulong tagInt;
 		string tagStr;
 		Register tagReg;
-		Expression tagExpr;
+		Expression *tagExpr;
 	}
 }
 
@@ -174,7 +175,7 @@ private class Context {
 		loc = TokenLocation(filename, line, col);
 	}
 	
-	void addToken(in Token t) {
+	void addToken(Token t) {
 		lines[line - 1].tokens ~= t;
 	}
 	
@@ -322,6 +323,8 @@ Line[] doPass0(in string path, string src) {
 				ctx.state = State.DEFAULT;
 				ctx.advance();
 			} else if ((cast(string)ctx.buffer in regNames) != null) {
+				warn("TODO: put reg recognition elsewhere");
+				
 				auto token = Token(TokenType.REGISTER, ctx.loc);
 				token.tagReg = regNames[cast(string)ctx.buffer];
 				

@@ -6,15 +6,15 @@
 module pass1;
 
 import std.c.stdlib;
-import std.container;
 import std.conv;
 import std.stdio;
 import std.string;
+import expression;
 import instruction;
 import pass0;
 
 
-/* pass1: directives, macros, symbols, label addresses */
+/* pass1: symbol table, label addrs, expression loading, some directives */
 
 
 public enum Section {
@@ -26,28 +26,34 @@ public struct Location {
 	ulong offset;
 }
 
-public enum Sign {
-	POSITIVE,
-	NEGATIVE,
+public enum StatementType {
+	DIRECTIVE,
 }
 
-public struct Expression {
-	bool sign;
-	ulong value;
+public enum DirectiveType {
+	BYTE,
 }
 
-public enum LineType {
-	DATA,
-	INSTR,
+public struct DataStatement {
+	byte[] bytes;
 }
 
-public struct AnnotatedLine {
-	LineType type;
-	Location loc;
+public struct DirectiveStatement {
+	DirectiveType type;
 	
 	union {
-		Expression value;
-		Instruction instr;
+		
+	}
+}
+
+public struct Statement {
+	StatementType type;
+	Location loc;
+	TokenLocation origin;
+	
+	union {
+		DataStatement data;
+		DirectiveStatement dir;
 	}
 }
 
@@ -73,14 +79,23 @@ private class Context {
 		}
 	}
 	
+	void addStatement(Statement s) {
+		statements ~= s;
+	}
+	
+	Statement[] getStatements() {
+		return statements;
+	}
+	
 	Location[string] labels;
-	Expression[string] symbols;
+	Integer[string] symbols;
 	
 private:
 	ulong line;
 	Line[] lines;
 	Section section;
 	ulong offset;
+	Statement[] statements;
 }
 
 Context ctx;
@@ -95,92 +110,73 @@ private void warn(in TokenLocation l, in string msg) {
 	stderr.writefln("[pass1|warn|%d:%d] %s", l.line, l.col, msg);
 }
 
-private Expression addExprs(in Expression a, in Expression b) {
-	if (a.sign == b.sign) {
-		return Expression(a.sign, a.value + b.value);
-	} else if (a.value >= b.value) {
-		return Expression(a.sign, a.value - b.value);
-	} else if (a.value < b.value) {
-		return Expression(b.sign, b.value - a.value);
-	} else {
-		/* ensures that zero is always positive */
-		return Expression(Sign.POSITIVE, 0);
+private void directiveByte() {
+	/+Token[] tokens = ctx.getLine().tokens[1..$];
+	bool hasQuantity = false;
+	
+	if (tokens.length == 0) {
+		error(ctx.getLine().tokens[0].origin,
+			"expected value parameter for .byte directive");
 	}
-}
-
-private Expression subExpr(ref DList!Token tokens) {
-	bool init = false;
-	Expression expr;
 	
-	// scan once for each operator precedence class, in the appropriate direc.
-	// when an operator is found, check for operand on either side
-	// (error if not found) and then replace the three relevant tokens
-	// with a TokenType.EXPRESSION containing the result
+	TokenLocation valueLoc = tokens[0].origin;
+	TokenLocation quantityLoc;
 	
-	//foreach (
+	Expression exprValue = evalExpr(tokens);
+	Expression exprQuantity;
 	
-	return expr;
-}
-
-private Expression evalExpr(in Token[] tokens) {
-	auto expr = Expression(Sign.POSITIVE, 0);
-	DList!Token[] parenStack = [DList!Token(new Token[0])];
-	
-	foreach (token; tokens) {
-		switch (token.type) {
-		case TokenType.PAREN_L:
-			parenStack ~= DList!Token(new Token[0]);
-			break;
-		case TokenType.PAREN_R:
-			if (parenStack[$-1].empty()) {
-				error(token.origin, "empty parentheses");
-			} else {
-				auto sub = subExpr(parenStack[$-1]);
-				
-				--parenStack.length;
-				
-				auto t = Token(TokenType.EXPRESSION,
-					TokenLocation("null", 0, 0));
-				t.tagExpr = sub;
-				parenStack[$-1].insertBack(t);
+	if (tokens.length > 0) {
+		if (tokens[0].type == TokenType.COMMA) {
+			hasQuantity = true;
+			quantityLoc = tokens[0].origin;
+			
+			exprQuantity = evalExpr(tokens);
+			
+			if (tokens.length > 0) {
+				error(tokens[0].origin,
+					"unexpected %s after .byte directive".format(
+					tokens[0].type.to!string()));
 			}
-			break;
-		case TokenType.IDENTIFIER:
-		case TokenType.LITERAL_INT:
-		case TokenType.ADD:
-		case TokenType.SUBTRACT:
-		case TokenType.MULTIPLY:
-		case TokenType.DIVIDE:
-		case TokenType.MODULO:
-			parenStack[$-1].insertBack(token);
-			break;
-		default:
-			/* halt evaluation: check if the paren stack has one member only */
-			/* then, run subExpr on the last stack member */
+		} else {
+			error(tokens[0].origin, "unexpected %s in .byte directive".format(
+				tokens[0].type.to!string()));
 		}
 	}
 	
-	return expr;
+	if (exprValue.sign != Sign.POSITIVE) {
+		error(valueLoc, "value for .byte cannot be negative");
+	} else if (exprValue.value > byte.max) {
+		error(valueLoc, "value for .byte must be in the range [%d,%d]".format(
+			byte.min, byte.max));
+	}
+	
+	byte value = cast(byte)exprValue.value;
+	ulong quantity = 1;
+	
+	if (hasQuantity) {
+		if (exprQuantity.sign != Sign.POSITIVE) {
+			error(quantityLoc, "quantity for .byte cannot be negative");
+		} else if (exprQuantity.value == 0) {
+			error(quantityLoc, "quantity for .byte cannot be zero");
+		}
+		
+		quantity = exprQuantity.value;
+	}
+	
+	auto aLine =
+		AnnotatedLine(LineType.DATA, Location(ctx.section, ctx.offset));
+	aLine.data.loc = ctx.getLine().tokens[0].origin;
+	aLine.data.data = new byte[quantity];
+	aLine.data.data[] = value;
+	
+	ctx.addALine(aLine);
+	
+	ctx.offset += quantity;+/
+	
+	
 }
 
-private void directiveByte() {
-	Token[] tokens = ctx.getLine().tokens[1..$];
-	
-	/* TODO: handle expressions; have optional param for quantity */
-	
-	// call evalExpr
-	
-	// check next token: comma is fine, that means optional param
-	// otherwise, there should be no others
-	
-	// if we have a comma, call evalExpr again
-	// then ensure that no tokens follow that
-	
-	// having obtained the value and the quantity (if any),
-	// now 
-}
-
-AnnotatedLine[] doPass1(Line[] lines) {
+Statement[] doPass1(Line[] lines) {
 	ctx = new Context(lines);
 	
 lineLoop:
@@ -237,5 +233,5 @@ lineLoop:
 		}
 	} while (ctx.nextLine());
 	
-	assert(0);
+	return ctx.getStatements();
 }
