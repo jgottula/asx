@@ -17,7 +17,7 @@ public enum Sign {
 }
 
 public struct Integer {
-	bool sign;
+	Sign sign;
 	ulong value;
 	
 	Integer add(Integer x) {
@@ -30,6 +30,14 @@ public struct Integer {
 		} else {
 			/* zero will always be positive */
 			return Integer(Sign.POSITIVE, 0);
+		}
+	}
+	
+	void negate() {
+		if (sign == Sign.POSITIVE) {
+			sign = Sign.NEGATIVE;
+		} else {
+			sign = Sign.POSITIVE;
 		}
 	}
 }
@@ -190,7 +198,36 @@ public struct Expression {
 			}
 		}
 		
-		/* evaluate multiplications, divisions, and modulos: left to right */
+		
+		/* AT THIS POINT, there should only be integers and operators in the
+		 * expression (no identifiers or parentheses) */
+		
+		
+		/* find and fix instances of unary minus */
+		for (ulong i = 0; i < tokens.length; ++i) {
+			auto token = tokens[i];
+			Token* lhs = null, rhs = null;
+			
+			if (i > 0) {
+				lhs = &tokens[i-1];
+			}
+			if (i < tokens.length - 1) {
+				rhs = &tokens[i+1];
+			}
+			
+			if (token.type == TokenType.SUBTRACT &&
+				rhs != null && rhs.type == TokenType.INTEGER &&
+				(lhs == null || lhs.type != TokenType.INTEGER)) {
+				rhs.tagInt.negate();
+				
+				Token[] tokensBefore = tokens[0..i];
+				Token[] tokensAfter = tokens[i+1..$];
+				
+				tokens = tokensBefore ~ tokensAfter;
+			}
+		}
+		
+		/* evaluate multiplications, divisions, and modulos (left to right) */
 		for (ulong i = 0; i < tokens.length; ++i) {
 			auto token = tokens[i];
 			Token* lhs = null, rhs = null;
@@ -262,24 +299,6 @@ public struct Expression {
 		
 		assert(tokens.length == 1);
 		assert(tokens[0].type == TokenType.INTEGER);
-		
-		/+/* DEBUG */
-		foreach (token; tokens) {
-			string tag;
-			
-			switch (token.type) {
-			case TokenType.INTEGER:
-				tag = (token.tagInt.sign == Sign.NEGATIVE ? "-" : "") ~
-					token.tagInt.value.to!string();
-				break;
-			default:
-				writeln("warning, not an INTEGER");
-				continue;
-			}
-			
-			writefln("%3d:%-3d %s [%s] @ %s", token.origin.line,
-				token.origin.col, token.type, tag, token.origin.file);
-		}+/
 		
 		return tokens[0].tagInt;
 	}
