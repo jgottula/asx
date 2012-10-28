@@ -203,12 +203,14 @@ Context ctx;
 
 
 private void error(in string msg) {
-	stderr.writefln("[pass0|error|%d:%d] %s", ctx.line, ctx.col, msg);
+	stderr.writefln("[pass0|error|%s:%d:%d] %s",
+		ctx.filename, ctx.line, ctx.col, msg);
 	exit(1);
 }
 
 private void warn(in string msg) {
-	stderr.writefln("[pass0|warn|%d:%d] %s", ctx.line, ctx.col, msg);
+	stderr.writefln("[pass0|warn|%s:%d:%d] %s",
+		ctx.filename, ctx.line, ctx.col, msg);
 }
 
 Line[] doPass0(in string path, string src) {

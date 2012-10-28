@@ -35,80 +35,85 @@ public struct Integer {
 }
 
 public class ExprException : Exception {
-	this(TokenLocation origin) {
-		super("");
-		this.origin = origin;
-	}
-	
-	TokenLocation origin;
-}
-public class ExprEmptyException : ExprException {
-	this(TokenLocation origin) {
-		super(origin);
-	}
-}
-public class ExprEmptyParenException : ExprException {
-	this(TokenLocation origin) {
-		super(origin);
-	}
-}
-public class ExprUnmatchedParenLException : ExprException {
-	this(TokenLocation origin) {
-		super(origin);
-	}
-}
-public class ExprUnmatchedParenRException : ExprException {
-	this(TokenLocation origin) {
-		super(origin);
-	}
-}
-
-public class EvalException : Exception {
-	this(Token token) {
+	this(const(Token) token) {
 		super("");
 		this.token = token;
 	}
 	
-	Token token;
+	const(Token) token;
 }
-public class EvalNotImplementedException : EvalException {
-	this(Token token) {
+public class ExprEmptyException : ExprException {
+	this(const(Token) token) {
 		super(token);
 	}
 }
-public class EvalSymNotFoundException : EvalException {
-	this(Token token) {
+public class ExprEmptyParenException : ExprException {
+	this(const(Token) token) {
 		super(token);
 	}
 }
-public class EvalNoLHSException : EvalException {
-	this(Token token) {
+public class ExprUnmatchedParenLException : ExprException {
+	this(const(Token) token) {
 		super(token);
 	}
 }
-public class EvalNoRHSException : EvalException {
-	this(Token token) {
+public class ExprUnmatchedParenRException : ExprException {
+	this(const(Token) token) {
 		super(token);
 	}
 }
-public class EvalUnexpectedLHSException : EvalException {
-	this(Token token) {
-		super(token);
-	}
-}
-public class EvalUnexpectedRHSException : EvalException {
-	this(Token token) {
-		super(token);
-	}
-}
-public class EvalConsecutiveIntegerException : EvalException {
-	this(Token token) {
+public class ExprBadTokenException : ExprException {
+	this(const(Token) token) {
 		super(token);
 	}
 }
 
-public class Expression {
-	this(Token[] inTokens, ulong level = 0) {
+public class EvalException : Exception {
+	this(const(Token) token) {
+		super("");
+		this.token = token;
+	}
+	
+	const(Token) token;
+}
+public class EvalNotImplementedException : EvalException {
+	this(const(Token) token) {
+		super(token);
+	}
+}
+public class EvalSymNotFoundException : EvalException {
+	this(const(Token) token) {
+		super(token);
+	}
+}
+public class EvalNoLHSException : EvalException {
+	this(const(Token) token) {
+		super(token);
+	}
+}
+public class EvalNoRHSException : EvalException {
+	this(const(Token) token) {
+		super(token);
+	}
+}
+public class EvalUnexpectedLHSException : EvalException {
+	this(const(Token) token) {
+		super(token);
+	}
+}
+public class EvalUnexpectedRHSException : EvalException {
+	this(const(Token) token) {
+		super(token);
+	}
+}
+public class EvalConsecutiveIntegerException : EvalException {
+	this(const(Token) token) {
+		super(token);
+	}
+}
+
+public struct Expression {
+	this(in Token[] inTokens, ulong level = 0) {
 		for (ulong i = 0; i < inTokens.length; ++i) {
 			auto token = inTokens[i];
 			
@@ -116,19 +121,21 @@ public class Expression {
 			case TokenType.PAREN_L:
 				auto t = Token(TokenType.EXPRESSION, token.origin);
 				auto subExpr = new Expression(inTokens[i+1..$], level + 1);
-				t.tagExpr = &subExpr;
+				t.tagExpr = subExpr;
 				
 				tokens ~= t;
-				i += t.tagExpr.length;
-				continue;
+				
+				length += subExpr.length + 1;
+				i += subExpr.length;
+				break;
 			case TokenType.PAREN_R:
 				if (tokens.length == 0) {
-					throw new ExprEmptyParenException(token.origin);
+					throw new ExprEmptyParenException(token);
 				} else if (level == 0) {
-					throw new ExprUnmatchedParenRException(token.origin);
+					throw new ExprUnmatchedParenRException(token);
 				}
 				
-				length = i + 1;
+				++length;
 				return;
 			case TokenType.IDENTIFIER:
 			case TokenType.INTEGER:
@@ -139,7 +146,8 @@ public class Expression {
 			case TokenType.DIVIDE:
 			case TokenType.MODULO:
 			case TokenType.EXPRESSION:
-				tokens ~= token;
+				tokens ~= cast(Token)token;
+				++length;
 				break;
 			case TokenType.DIRECTIVE:
 			case TokenType.REGISTER:
@@ -147,18 +155,15 @@ public class Expression {
 			case TokenType.COMMA:
 			case TokenType.BRACKET_L:
 			case TokenType.BRACKET_R:
-				length = i;
-				goto done;
+				throw new ExprBadTokenException(token);
 			}
 		}
 		
-		length = tokens.length;
-		
 	done:
 		if (tokens.length == 0) {
-			throw new ExprEmptyException(tokens[0].origin);
+			throw new ExprEmptyException(tokens[0]);
 		} else if (level != 0) {
-			throw new ExprUnmatchedParenLException(tokens[$-1].origin);
+			throw new ExprUnmatchedParenLException(tokens[$-1]);
 		}
 	}
 	
@@ -167,8 +172,7 @@ public class Expression {
 		 * also, replace identifiers with Integers if they exist */
 		foreach (ref token; tokens) {
 			if (token.type == TokenType.EXPRESSION) {
-				auto newToken = Token(TokenType.INTEGER,
-					token.tagExpr.tokens[0].origin);
+				auto newToken = Token(TokenType.INTEGER, token.origin);
 				newToken.tagInt = token.tagExpr.evalNoLabels(symTable);
 				
 				token = newToken;
@@ -186,6 +190,7 @@ public class Expression {
 			}
 		}
 		
+		/* evaluate multiplications, divisions, and modulos: left to right */
 		for (ulong i = 0; i < tokens.length; ++i) {
 			auto token = tokens[i];
 			Token* lhs = null, rhs = null;
@@ -255,13 +260,17 @@ public class Expression {
 			}
 		}
 		
-		/* DEBUG */
+		assert(tokens.length == 1);
+		assert(tokens[0].type == TokenType.INTEGER);
+		
+		/+/* DEBUG */
 		foreach (token; tokens) {
 			string tag;
 			
 			switch (token.type) {
 			case TokenType.INTEGER:
-				tag = token.tagInt.to!string();
+				tag = (token.tagInt.sign == Sign.NEGATIVE ? "-" : "") ~
+					token.tagInt.value.to!string();
 				break;
 			default:
 				writeln("warning, not an INTEGER");
@@ -270,10 +279,9 @@ public class Expression {
 			
 			writefln("%3d:%-3d %s [%s] @ %s", token.origin.line,
 				token.origin.col, token.type, tag, token.origin.file);
-		}
+		}+/
 		
-		
-		return Integer();
+		return tokens[0].tagInt;
 	}
 	
 	ulong length;

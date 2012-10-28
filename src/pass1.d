@@ -104,27 +104,30 @@ Context ctx;
 
 
 private void error(in TokenLocation l, in string msg) {
-	stderr.writefln("[pass1|error|%d:%d] %s", l.line, l.col, msg);
+	stderr.writefln("[pass1|error|%s:%d:%d] %s", l.file, l.line, l.col, msg);
 	exit(1);
 }
 
 private void warn(in TokenLocation l, in string msg) {
-	stderr.writefln("[pass1|warn|%d:%d] %s", l.line, l.col, msg);
+	stderr.writefln("[pass1|warn|%s:%d:%d] %s", l.file, l.line, l.col, msg);
 }
 
 private Token[] getExpr(Token[] tokens, out Expression expr) {
 	try {
-		expr = new Expression(tokens);
+		expr = Expression(tokens);
 	} catch (ExprEmptyException e) {
-		error(e.origin, "empty expression");
+		error(e.token.origin, "empty expression");
 	} catch (ExprEmptyParenException e) {
-		error(e.origin, "empty parentheses");
+		error(e.token.origin, "empty parentheses");
 	} catch (ExprUnmatchedParenLException e) {
-		error(e.origin, "unmatched '('");
+		error(e.token.origin, "unmatched '('");
 	} catch (ExprUnmatchedParenRException e) {
-		error(e.origin, "unmatched ')'");
+		error(e.token.origin, "unmatched ')'");
+	} catch (ExprBadTokenException e) {
+		error(e.token.origin, "unexpected token %s in expression".format(
+			e.token.type.to!string()));
 	} catch (ExprException e) {
-		error(e.origin, "unspecified expression error");
+		error(e.token.origin, "unspecified expression error");
 	}
 	
 	/* tokens AFTER the expression */
@@ -207,7 +210,7 @@ private void directiveByte() {
 		quantity = intQuantity.value;
 	}
 	
-	stderr.writefln(".byte: %x [%d]", value, quantity);
+	stderr.writefln(".byte: %02x x %d", value, quantity);
 	
 	auto data = new byte[quantity];
 	

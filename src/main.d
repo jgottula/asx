@@ -8,6 +8,7 @@ module main;
 import std.c.stdlib;
 import std.conv;
 import std.stdio;
+import expression;
 import input;
 import newline;
 import pass0;
@@ -36,7 +37,8 @@ void main(in string[] args) {
 			
 			switch (token.type) {
 			case TokenType.INTEGER:
-				tag = token.tagInt.to!string();
+				tag = (token.tagInt.sign == Sign.NEGATIVE ? "-" : "") ~
+					token.tagInt.value.to!string();
 				break;
 			case TokenType.REGISTER:
 				tag = token.tagReg.to!string();
