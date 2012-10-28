@@ -8,7 +8,7 @@ module pass2;
 import pass1;
 
 
-/* pass2: some directives, section output, code gen */
+/* pass2: evaluate instruction operands, gen code */
 
 
 void doPass2(in Statement[] statements) {

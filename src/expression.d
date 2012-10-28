@@ -9,7 +9,7 @@ import std.container;
 import std.conv;
 import pass1;
 import segment;
-import table;
+import symbol;
 import token;
 
 
@@ -190,35 +190,25 @@ public struct Expression {
 		}
 	}
 	
-	Integer eval(in SymbolTable symTable, in LabelTable labelTable,
-		bool labelsOK) {
+	Integer eval(in Symbol[string] symbols) {
 		/* replace Expressions with Integers by evaluating them recursively;
-		 * also, replace identifiers/labels with Integers if they exist */
+		 * also, replace symbols with Integers if they exist */
 		foreach (ref token; tokens) {
 			if (token.type == TokenType.EXPRESSION) {
 				auto newToken = Token(TokenType.INTEGER, token.origin);
 				newToken.tagInt =
-					token.tagExpr.eval(symTable, labelTable, labelsOK);
+					token.tagExpr.eval(symbols);
 				
 				token = newToken;
 			} else if (token.type == TokenType.IDENTIFIER) {
-				const(Integer)* symValue = token.tagStr in symTable.symbols;
+				const(Symbol)* symValue = token.tagStr in symbols;
 				
 				if (symValue == null) {
-					const(Location)* labelValue =
-						token.tagStr in labelTable.labels;
-					
-					if (labelValue == null) {
-						throw new EvalSymNotFoundException(token);
-					} else if (!labelsOK) {
-						throw new EvalLabelsDisallowedException(token);
-					}
+					throw new EvalSymNotFoundException(token);
 				}
 				
-				/* TODO: search the label table if labelsOK is true */
-				
 				auto newToken = Token(TokenType.INTEGER, token.origin);
-				newToken.tagInt = *symValue;
+				newToken.tagInt = Integer(Sign.POSITIVE, symValue.value);
 				
 				token = newToken;
 			}

@@ -13,11 +13,12 @@ import expression;
 import instruction;
 import pass0;
 import segment;
-import table;
+import symbol;
 import token;
 
 
-/* pass1: symbol table, label addrs, expression loading, some directives */
+/* pass1: symbol table, label addrs, expression loading, some directives,
+ * parsing/measuring of instructions (but not evaluation) */
 
 
 public enum StatementType {
@@ -102,8 +103,7 @@ private class Context {
 		return Location(segment, offsets.get(segment, 0));
 	}
 	
-	SymbolTable symTable;
-	LabelTable labelTable;
+	Symbol[string] symbols;
 	
 private:
 	Line[] lines;
@@ -149,9 +149,9 @@ private Token[] getExpr(Token[] tokens, out Expression expr) {
 	return tokens[expr.length..$];
 }
 
-private Integer eval(Expression expr, bool labelsOK = true) {
+private Integer eval(Expression expr) {
 	try {
-		return expr.eval(ctx.symTable, ctx.labelTable, labelsOK);
+		return expr.eval(ctx.symbols);
 	} catch (EvalException e) {
 		error(e.token.origin, "unspecified expression evaluation error");
 	} /* TODO: ensure that all exception types are here */
@@ -187,12 +187,53 @@ private void dirSeg() {
 	ctx.switchSegment(segment);
 }
 
+private void dirDef() {
+	Token[] tokens = ctx.getLine().tokens;
+	
+	if (tokens.length == 1) {
+		error(tokens[0].origin, "expected identifier for .def directive");
+	} else if (tokens[1].type != TokenType.IDENTIFIER) {
+		error(tokens[1].origin, "unexpected %s in .def directive".format(
+			tokens[1].type.to!string()));
+	} else if (tokens.length < 3) {
+		error(tokens[1].origin, "expected value for .def directive");
+	} else if (tokens[2].type != TokenType.COMMA) {
+		error(tokens[2].origin, "unexpected %s in .def directive".format(
+			tokens[2].type.to!string()));
+	} else if (tokens.length < 4) {
+		error(tokens[2].origin, "missing value in .def directive");
+	}
+	
+	Expression exprValue;
+	Integer intValue;
+	
+	/* TODO: eval expression; then check for extra junk on the end */
+	assert(0);
+	
+	
+	
+	
+	
+	string name = tokens[1].tagStr;
+	
+	// redefinition is OK
+	/+if ((name in ctx.symTable.symbols) != null) {
+		error(tokens[1].origin, "'%s' has already been defined " ~
+			"as a symbol".format(name));
+	} else if ((name in ctx.labelTable.labels) != null) {
+		error(tokens[1].origin, "'%s' has already been defined " ~
+			"as a label".format(name));
+	}+/
+	
+	/* TODO: assign symbol value */
+}
+
 private void dirByte() {
 	Token[] tokens = ctx.getLine().tokens;
 	bool hasQuantity = false;
 	
 	if (tokens.length == 1) {
-		error(tokens[0].origin, "expected value parameter for .byte directive");
+		error(tokens[0].origin, "expected value for .byte directive");
 	}
 	
 	Expression exprValue, exprQuantity;
@@ -219,7 +260,7 @@ private void dirByte() {
 				}
 			} else {
 				error(tokPostValue[0].origin,
-					"expected quantity parameter for .byte directive");
+					"expected quantity for .byte directive");
 			}
 		} else {
 			error(tokPostValue[0].origin,
@@ -228,7 +269,7 @@ private void dirByte() {
 		}
 	}
 	
-	intValue = eval(exprValue, false);
+	intValue = eval(exprValue);
 	
 	if (intValue.sign != Sign.POSITIVE) {
 		error(locValue, "value for .byte cannot be negative");
@@ -241,7 +282,7 @@ private void dirByte() {
 	ulong quantity = 1;
 	
 	if (hasQuantity) {
-		intQuantity = eval(exprQuantity, false);
+		intQuantity = eval(exprQuantity);
 		
 		if (intQuantity.sign != Sign.POSITIVE) {
 			error(locValue, "quantity for .byte cannot be negative");
@@ -292,6 +333,9 @@ lineLoop:
 			case ".bss":
 				dirSeg();
 				break;
+			case ".def":
+				dirDef();
+				break;
 			case ".byte":
 				dirByte();
 				break;
@@ -304,16 +348,12 @@ lineLoop:
 			}
 			break;
 		case TokenType.LABEL:
-			if ((token.tagStr in ctx.symTable.symbols) == null) {
-				if ((token.tagStr in ctx.labelTable.labels) == null) {
-					ctx.labelTable.labels[token.tagStr] = ctx.getLocation();
-				} else {
-					error(token.origin, "'%s' has already been defined" ~
-						"as a label".format(token.tagStr));
-				}
+			/* labels cannot be redefined because they have a finite position */
+			if ((token.tagStr in ctx.symbols) == null) {
+				ctx.symbols[token.tagStr] = Symbol(ctx.getLocation().offset);
 			} else {
-				error(token.origin, "'%s' has already been defined " ~
-					"as a symbol".format(token.tagStr));
+				error(token.origin,
+					"'%s' has already been defined".format(token.tagStr));
 			}
 			break;
 		case TokenType.INTEGER:
@@ -339,16 +379,8 @@ lineLoop:
 	
 	/* debug */
 	stderr.writefln("symbol table:\n--------");
-	foreach (key; ctx.symTable.symbols.byKey()) {
-		stderr.writefln("'%s' -> %s", key,
-			ctx.symTable.symbols[key].to!string());
-	}
-	stderr.writefln("--------");
-	stderr.writefln("label table:\n--------");
-	foreach (key; ctx.labelTable.labels.byKey()) {
-		auto loc = ctx.labelTable.labels[key];
-		stderr.writefln("'%s' -> %s:%x", key, loc.segment.to!string(),
-			loc.offset);
+	foreach (key; ctx.symbols.byKey()) {
+		stderr.writefln("'%s' -> %016x", key, ctx.symbols[key].value);
 	}
 	stderr.writefln("--------");
 	
