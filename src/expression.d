@@ -6,6 +6,7 @@
 module expression;
 
 import std.container;
+import std.conv;
 import pass1;
 import table;
 import token;
@@ -38,6 +39,14 @@ public struct Integer {
 			sign = Sign.NEGATIVE;
 		} else {
 			sign = Sign.POSITIVE;
+		}
+	}
+	
+	string toString() {
+		if (sign == Sign.NEGATIVE) {
+			return '-' ~ value.to!string();
+		} else {
+			return value.to!string();
 		}
 	}
 }

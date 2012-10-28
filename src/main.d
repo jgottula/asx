@@ -38,8 +38,7 @@ void main(in string[] args) {
 			
 			switch (token.type) {
 			case TokenType.INTEGER:
-				tag = (token.tagInt.sign == Sign.NEGATIVE ? "-" : "") ~
-					token.tagInt.value.to!string();
+				tag = token.tagInt.to!string();
 				break;
 			default:
 				tag = token.tagStr;
