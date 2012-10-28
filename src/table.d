@@ -9,10 +9,10 @@ import expression;
 import segment;
 
 
-public class SymbolTable {
+public struct SymbolTable {
 	Integer[string] symbols;
 }
 
-public class LabelTable {
+public struct LabelTable {
 	Location[string] labels;
 }
