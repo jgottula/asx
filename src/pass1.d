@@ -230,26 +230,26 @@ private void dirDef() {
 	
 	Expression exprValue;
 	Integer intValue;
+	TokenLocation locValue;
 	
-	/* TODO: eval expression; then check for extra junk on the end */
-	assert(0);
+	Token[] tokValue = tokens[3..$];
+	Token[] tokPostValue = getExpr(tokValue, exprValue);
+	locValue = tokValue[0].origin;
 	
+	if (tokPostValue.length > 0) {
+		error(tokPostValue[0].origin, "unexpected %s after .def " ~
+			"directive".format(tokPostValue[0].type.to!string()));
+	}
 	
+	intValue = evalExpr(exprValue);
 	
-	
+	if (intValue.sign != Sign.POSITIVE) {
+		error(locValue, "symbols cannot have negative values");
+	}
 	
 	string name = tokens[1].tagStr;
 	
-	// redefinition is OK
-	/+if ((name in ctx.symTable.symbols) != null) {
-		error(tokens[1].origin, "'%s' has already been defined " ~
-			"as a symbol".format(name));
-	} else if ((name in ctx.labelTable.labels) != null) {
-		error(tokens[1].origin, "'%s' has already been defined " ~
-			"as a label".format(name));
-	}+/
-	
-	/* TODO: assign symbol value */
+	ctx.symbols[name] = Symbol(intValue.value);
 }
 
 private void dirData() {
