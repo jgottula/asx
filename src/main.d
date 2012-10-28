@@ -53,10 +53,4 @@ void main(in string[] args) {
 	}
 	
 	doPass1(lines);
-	
-	/+string source, ppSource;
-	readSource(args[1], source);
-	preprocessSource(source, ppSource);
-	
-	writeln(ppSource);+/
 }
