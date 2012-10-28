@@ -21,6 +21,13 @@ import token;
  * parsing/measuring of instructions (but not evaluation) */
 
 
+public enum DataSize {
+	BYTE,
+	WORD,
+	DWORD,
+	QWORD,
+}
+
 public enum StatementType {
 	DATA,
 	DIRECTIVE,
@@ -31,7 +38,8 @@ public enum StatementType {
 }+/
 
 public struct DataStatement {
-	byte[] bytes;
+	DataSize size;
+	ulong[] data;
 }
 
 /+public struct DirectiveStatement {
@@ -228,13 +236,34 @@ private void dirDef() {
 	/* TODO: assign symbol value */
 }
 
-private void dirByte() {
+private void dirData() {
 	Token[] tokens = ctx.getLine().tokens;
-	bool hasQuantity = false;
+	string sizeStr = tokens[0].tagStr[1..$];
+	DataSize size;
+	
+	switch (sizeStr) {
+	case "byte":
+		size = DataSize.BYTE;
+		break;
+	case "word":
+		size = DataSize.WORD;
+		break;
+	case "dword":
+		size = DataSize.DWORD;
+		break;
+	case "qword":
+		size = DataSize.QWORD;
+		break;
+	default:
+		assert(0);
+	}
 	
 	if (tokens.length == 1) {
-		error(tokens[0].origin, "expected value for .byte directive");
+		error(tokens[0].origin,
+			"expected value for .%s directive".format(sizeStr));
 	}
+	
+	bool hasQuantity = false;
 	
 	Expression exprValue, exprQuantity;
 	Integer intValue, intQuantity;
@@ -255,51 +284,87 @@ private void dirByte() {
 				
 				if (tokPostQuantity.length > 0) {
 					error(tokPostQuantity[0].origin,
-						"unexpected %s after .byte directive".format(
-						tokPostQuantity[0].type.to!string()));
+						"unexpected %s after .%s directive".format(
+						tokPostQuantity[0].type.to!string(), sizeStr));
 				}
 			} else {
 				error(tokPostValue[0].origin,
-					"expected quantity for .byte directive");
+					"expected quantity for .%s directive".format(sizeStr));
 			}
 		} else {
 			error(tokPostValue[0].origin,
-				"unexpected %s in .byte directive".format(
-				tokPostValue[0].type.to!string()));
+				"unexpected %s in .%s directive".format(
+				tokPostValue[0].type.to!string(), sizeStr));
 		}
 	}
 	
 	intValue = eval(exprValue);
 	
 	if (intValue.sign != Sign.POSITIVE) {
-		error(locValue, "value for .byte cannot be negative");
-	} else if (intValue.value > byte.max) {
-		error(locValue, "value for .byte must be in the range [%d,%d]".format(
-			byte.min, byte.max));
+		error(locValue, "value for .%s cannot be negative".format(sizeStr));
 	}
 	
-	byte value = cast(byte)intValue.value;
+	ulong value;
+	
+	final switch (size) {
+	case DataSize.BYTE:
+		if (intValue.value > ubyte.max) {
+			error(locValue, "value for .byte must be in the range " ~
+				"[%d,%d]".format(ubyte.min, ubyte.max));
+		} else {
+			value = cast(ubyte)intValue.value;
+		}
+		break;
+	case DataSize.WORD:
+		if (intValue.value > ushort.max) {
+			error(locValue, "value for .word must be in the range " ~
+				"[%d,%d]".format(ushort.min, ushort.max));
+		} else {
+			value = cast(ushort)intValue.value;
+		}
+		break;
+	case DataSize.DWORD:
+		if (intValue.value > uint.max) {
+			error(locValue, "value for .dword must be in the range " ~
+				"[%d,%d]".format(uint.min, uint.max));
+		} else {
+			value = cast(uint)intValue.value;
+		}
+		break;
+	case DataSize.QWORD:
+		if (intValue.value > ulong.max) {
+			error(locValue, "value for .qword must be in the range " ~
+				"[%d,%d]".format(ulong.min, ulong.max));
+		} else {
+			value = cast(ulong)intValue.value;
+		}
+		break;
+	}
+	
 	ulong quantity = 1;
 	
 	if (hasQuantity) {
 		intQuantity = eval(exprQuantity);
 		
 		if (intQuantity.sign != Sign.POSITIVE) {
-			error(locValue, "quantity for .byte cannot be negative");
+			error(locValue,
+				"quantity for .%s cannot be negative".format(sizeStr));
 		} else if (intQuantity.value == 0) {
-			error(locValue, "quantity for .byte cannot be zero");
+			error(locValue,
+				"quantity for .%s cannot be zero".format(sizeStr));
 		}
 		
 		quantity = intQuantity.value;
 	}
 	
-	stderr.writefln(".byte: %02x x %d", value, quantity);
+	stderr.writefln(".%s: %x x %d", sizeStr, value, quantity);
 	
-	auto data = new byte[quantity];
+	auto data = new ulong[quantity];
+	data[] = value;
 	
 	auto st = Statement(StatementType.DATA, ctx.getLocation(),
 		tokens[0].origin);
-	st.data = DataStatement(data);
+	st.data = DataStatement(size, data);
 	
 	ctx.addStatement(st);
 	ctx.advance(quantity);
@@ -337,7 +402,10 @@ lineLoop:
 				dirDef();
 				break;
 			case ".byte":
-				dirByte();
+			case ".word":
+			case ".dword":
+			case ".qword":
+				dirData();
 				break;
 			default:
 				/+error(token.origin,
