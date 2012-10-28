@@ -12,21 +12,13 @@ import std.string;
 import expression;
 import instruction;
 import pass0;
+import segment;
 import table;
 import token;
 
 
 /* pass1: symbol table, label addrs, expression loading, some directives */
 
-
-public enum Section {
-	TEXT,
-}
-
-public struct Location {
-	Section section;
-	ulong offset;
-}
 
 public enum StatementType {
 	DATA,
@@ -65,8 +57,8 @@ private class Context {
 		this.lines = lines;
 		line = 0;
 		
-		section = Section.TEXT;
-		offset = 0;
+		segment = Segment.NULL;
+		/* offsets are implicitly zero */
 	}
 	
 	Line getLine() {
@@ -90,15 +82,33 @@ private class Context {
 		return statements;
 	}
 	
+	bool advance(ulong offset) {
+		final switch (segment) {
+		case Segment.NULL:
+			return false;
+		case Segment.TEXT:
+		case Segment.DATA:
+		case Segment.BSS:
+			offsets[segment] += offset;
+			return true;
+		}
+	}
+	
+	Location getLocation() {
+		return Location(segment, offsets[segment]);
+	}
+	
 	SymbolTable symTable;
-	Location[string] labels;
+	LabelTable labelTable;
 	
 private:
-	ulong line;
 	Line[] lines;
-	Section section;
-	ulong offset;
+	ulong line;
+	
 	Statement[] statements;
+	
+	Segment segment;
+	ulong[Segment] offsets;
 }
 
 Context ctx;
@@ -215,12 +225,12 @@ private void directiveByte() {
 	
 	auto data = new byte[quantity];
 	
-	auto st = Statement(StatementType.DATA, Location(ctx.section, ctx.offset),
+	auto st = Statement(StatementType.DATA, ctx.getLocation(),
 		tokens[0].origin);
 	st.data = DataStatement(data);
 	
 	ctx.addStatement(st);
-	ctx.offset += quantity;
+	ctx.advance(quantity);
 }
 
 Statement[] doPass1(Line[] lines) {
