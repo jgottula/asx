@@ -6,7 +6,9 @@
 module escape;
 
 
-/* TODO: add support for octal/decimal/hex escape sequences */
+/* TODO: add support for octal/decimal/hex escape sequences
+ * TODO: handle \\ \" and possibly \' \?
+ * TODO: come up with better names for these functions */
 
 
 bool isEscape(char c) {
