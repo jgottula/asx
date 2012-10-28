@@ -166,9 +166,10 @@ public struct Expression {
 				tokens ~= cast(Token)token;
 				++length;
 				break;
+			case TokenType.COMMA:
+				goto done;
 			case TokenType.DIRECTIVE:
 			case TokenType.STRING:
-			case TokenType.COMMA:
 			case TokenType.BRACKET_L:
 			case TokenType.BRACKET_R:
 				throw new ExprBadTokenException(token);

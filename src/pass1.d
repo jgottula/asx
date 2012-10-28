@@ -139,7 +139,7 @@ private Token[] getExpr(Token[] tokens, out Expression expr) {
 	} catch (ExprUnmatchedParenRException e) {
 		error(e.token.origin, "unmatched ')'");
 	} catch (ExprBadTokenException e) {
-		error(e.token.origin, "unexpected token %s in expression".format(
+		error(e.token.origin, "unexpected %s in expression".format(
 			e.token.type.to!string()));
 	} catch (ExprException e) {
 		error(e.token.origin, "unspecified expression error");
