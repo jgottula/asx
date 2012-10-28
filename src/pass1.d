@@ -149,9 +149,9 @@ private Token[] getExpr(Token[] tokens, out Expression expr) {
 	return tokens[expr.length..$];
 }
 
-private Integer evalExprNoLabels(Expression expr) {
+private Integer eval(Expression expr, bool labelsOK = true) {
 	try {
-		return expr.evalNoLabels(ctx.symTable);
+		return expr.eval(ctx.symTable, ctx.labelTable, labelsOK);
 	} catch (EvalException e) {
 		error(e.token.origin, "unspecified expression evaluation error");
 	} /* TODO: ensure that all exception types are here */
@@ -160,7 +160,7 @@ private Integer evalExprNoLabels(Expression expr) {
 	return Integer(Sign.POSITIVE, 0);
 }
 
-private void dirSeg(string seg) {
+private void dirSeg() {
 	Token[] tokens = ctx.getLine().tokens;
 	
 	if (tokens.length > 1) {
@@ -170,7 +170,7 @@ private void dirSeg(string seg) {
 	
 	Segment segment;
 	
-	switch (seg) {
+	switch (tokens[0].tagStr[1..$]) {
 	case "text":
 		segment = Segment.TEXT;
 		break;
@@ -228,7 +228,7 @@ private void dirByte() {
 		}
 	}
 	
-	intValue = evalExprNoLabels(exprValue);
+	intValue = eval(exprValue, false);
 	
 	if (intValue.sign != Sign.POSITIVE) {
 		error(locValue, "value for .byte cannot be negative");
@@ -241,7 +241,7 @@ private void dirByte() {
 	ulong quantity = 1;
 	
 	if (hasQuantity) {
-		intQuantity = evalExprNoLabels(exprQuantity);
+		intQuantity = eval(exprQuantity, false);
 		
 		if (intQuantity.sign != Sign.POSITIVE) {
 			error(locValue, "quantity for .byte cannot be negative");
@@ -290,7 +290,7 @@ lineLoop:
 			case ".text":
 			case ".data":
 			case ".bss":
-				dirSeg(token.tagStr[1..$]);
+				dirSeg();
 				break;
 			case ".byte":
 				dirByte();

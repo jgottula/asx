@@ -8,6 +8,7 @@ module expression;
 import std.container;
 import std.conv;
 import pass1;
+import segment;
 import table;
 import token;
 
@@ -103,6 +104,11 @@ public class EvalSymNotFoundException : EvalException {
 		super(token);
 	}
 }
+public class EvalLabelsDisallowedException : EvalException {
+	this(const(Token) token) {
+		super(token);
+	}
+}
 public class EvalNoLHSException : EvalException {
 	this(const(Token) token) {
 		super(token);
@@ -184,21 +190,32 @@ public struct Expression {
 		}
 	}
 	
-	Integer evalNoLabels(in SymbolTable symTable) {
+	Integer eval(in SymbolTable symTable, in LabelTable labelTable,
+		bool labelsOK) {
 		/* replace Expressions with Integers by evaluating them recursively;
-		 * also, replace identifiers with Integers if they exist */
+		 * also, replace identifiers/labels with Integers if they exist */
 		foreach (ref token; tokens) {
 			if (token.type == TokenType.EXPRESSION) {
 				auto newToken = Token(TokenType.INTEGER, token.origin);
-				newToken.tagInt = token.tagExpr.evalNoLabels(symTable);
+				newToken.tagInt =
+					token.tagExpr.eval(symTable, labelTable, labelsOK);
 				
 				token = newToken;
 			} else if (token.type == TokenType.IDENTIFIER) {
 				const(Integer)* symValue = token.tagStr in symTable.symbols;
 				
 				if (symValue == null) {
-					throw new EvalSymNotFoundException(token);
+					const(Location)* labelValue =
+						token.tagStr in labelTable.labels;
+					
+					if (labelValue == null) {
+						throw new EvalSymNotFoundException(token);
+					} else if (!labelsOK) {
+						throw new EvalLabelsDisallowedException(token);
+					}
 				}
+				
+				/* TODO: search the label table if labelsOK is true */
 				
 				auto newToken = Token(TokenType.INTEGER, token.origin);
 				newToken.tagInt = *symValue;
