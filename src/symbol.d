@@ -17,3 +17,7 @@ public struct Symbol {
 	 * NOTE: adding anything to this struct will make the assoc array lookups
 	 * probably fail, so be careful */
 }
+
+public struct SymbolTable {
+	/* TODO: have isSymbolDefined, addSymbol, other functions */
+}

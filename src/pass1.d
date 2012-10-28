@@ -12,6 +12,7 @@ import std.string;
 import expression;
 import instruction;
 import pass0;
+import register;
 import segment;
 import symbol;
 import token;
@@ -33,22 +34,14 @@ public enum StatementType {
 	INSTRUCTION,
 }
 
-/+public enum DirectiveType {
-	
-}+/
-
 public struct DataStatement {
 	DataSize size;
 	ulong[] data;
 }
 
-/+public struct DirectiveStatement {
-	DirectiveType type;
-	
-	union {
-		
-	}
-}+/
+public struct InstrStatement {
+	Instruction instr;
+}
 
 public struct Statement {
 	StatementType type;
@@ -56,8 +49,8 @@ public struct Statement {
 	TokenLocation origin;
 	
 	union {
-		DataStatement data;
-		/+DirectiveStatement dir;+/
+		DataStatement stData;
+		InstrStatement stInstr;
 	}
 }
 
@@ -181,7 +174,28 @@ private Integer evalExpr(Expression expr) {
 		error(e.token.origin, "unspecified expression evaluation error");
 	}
 	
-	return Integer(Sign.POSITIVE, 0);
+	assert(0);
+}
+
+private void instr() {
+	Line line = ctx.getLine();
+	Instruction instr;
+	
+	try {
+		instr = parseInstruction(line);
+	} catch (InstrException e) {
+		error(e.token.origin, "unspecified instruction error");
+	} /* TODO: other exceptions */
+	/* TODO: catch expression parsing exceptions
+	 * we could merge with the evalExpr code by having a handler that takes a
+	 * ExprException and uses (e is ExprBadTokenException) etc to determine
+	 * which message to show */
+	
+	Statement st = Statement(StatementType.INSTRUCTION, ctx.getLocation(),
+		line.tokens[0].origin);
+	st.stInstr = InstrStatement(instr);
+	
+	ctx.addStatement(st);
 }
 
 private void dirSeg() {
@@ -248,6 +262,10 @@ private void dirDef() {
 	}
 	
 	string name = tokens[1].tagStr;
+	
+	if (isRegName(name)) {
+		error(tokens[1].origin, "'%s' is a register name".format(name));
+	}
 	
 	ctx.symbols[name] = Symbol(intValue.value);
 }
@@ -380,7 +398,7 @@ private void dirData() {
 	
 	auto st = Statement(StatementType.DATA, ctx.getLocation(),
 		tokens[0].origin);
-	st.data = DataStatement(size, data);
+	st.stData = DataStatement(size, data);
 	
 	ctx.addStatement(st);
 	ctx.advance(quantity);
@@ -404,8 +422,12 @@ lineLoop:
 		
 		final switch (token.type) {
 		case TokenType.IDENTIFIER:
-			// check if this is a mneumonic
-			// otherwise, goto case invalid
+			if (isMneumonic(token.tagStr)) {
+				instr();
+			} else {
+				error(token.origin,
+					"'%s' is not an instruction".format(token.tagStr));
+			}
 			break;
 		case TokenType.DIRECTIVE:
 			switch (token.tagStr) {
@@ -432,12 +454,16 @@ lineLoop:
 			}
 			break;
 		case TokenType.LABEL:
-			/* labels cannot be redefined because they have a finite position */
-			if ((token.tagStr in ctx.symbols) == null) {
-				ctx.symbols[token.tagStr] = Symbol(ctx.getLocation().offset);
-			} else {
+			if (isRegName(token.tagStr)) {
+				error(token.origin,
+					"'%s' is a register name".format(token.tagStr));
+			} else if ((token.tagStr in ctx.symbols) != null) {
+				/* label symbols cannot be redefined because they represent a
+				 * single, static memory location */
 				error(token.origin,
 					"'%s' has already been defined".format(token.tagStr));
+			} else {
+				ctx.symbols[token.tagStr] = Symbol(ctx.getLocation().offset);
 			}
 			break;
 		case TokenType.INTEGER:
@@ -465,6 +491,31 @@ lineLoop:
 	stderr.writefln("symbol table:\n--------");
 	foreach (key; ctx.symbols.byKey()) {
 		stderr.writefln("'%s' -> %016x", key, ctx.symbols[key].value);
+	}
+	stderr.writefln("--------");
+	stderr.writefln("statements:\n--------");
+	foreach (st; ctx.getStatements()) {
+		stderr.writefln("%s @ %s:%s in %s [seg %s offset %x]",
+			st.type.to!string(), st.origin.line, st.origin.col,
+			st.origin.file, st.loc.segment, st.loc.offset);
+		
+		final switch (st.type) {
+		case StatementType.DATA:
+			stderr.writef("[size %s len %d]", st.stData.size.to!string(),
+				st.stData.data.length);
+			foreach (datum; st.stData.data) {
+				stderr.writef(" %x", datum);
+			}
+			stderr.writeln();
+			break;
+		case StatementType.INSTRUCTION:
+			stderr.writef("%s", st.stInstr.instr.mneu);
+			foreach (operand; st.stInstr.instr.operands) {
+				stderr.writef(" %s", operand.to!string());
+			}
+			stderr.writeln();
+			break;
+		}
 	}
 	stderr.writefln("--------");
 	

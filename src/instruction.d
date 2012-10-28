@@ -6,6 +6,11 @@
 module instruction;
 
 import std.string;
+import expression;
+import pass0;
+import pass1;
+import register;
+import token;
 
 
 static this() {
@@ -31,11 +36,117 @@ public enum Mneumonic {
 	STOSW, SUB, TEST, WAIT, XCHG, XLAT, XOR
 }
 
-public Mneumonic[string] mneumonics;
+/+public enum OperandType {
+	EMPTY,
+	REGISTER,
+	EXPRESSION,
+}
+
+public struct Operand {
+	OperandType type;
+	Expression expr;
+}+/
+
+/* in pass2, we will determine the actual TYPES of operands (immediate, reg,
+ * indexed, etc) */
 
 public struct Instruction {
-	Mneumonic mneumonic;
+	Mneumonic mneu;
+	Expression[] operands;
+	/+Operand[] operands;+/
+}
+
+public class InstrException : Exception {
+	this(const(Token) token) {
+		super("");
+		this.token = token;
+	}
 	
-	/* need to add 'parameters' here, and they must be able to contain
-	 * expressions that include labels */
+	const(Token) token;
+}
+public class InstrMissingOperandException : InstrException {
+	this(const(Token) token) {
+		super(token);
+	}
+}
+public class InstrExtraOperandException : InstrException {
+	this(const(Token) token) {
+		super(token);
+	}
+}
+public class InstrEmptyOperandException : InstrException {
+	this(const(Token) token) {
+		super(token);
+	}
+}
+public class InstrHangingCommaException : InstrException {
+	this(const(Token) token) {
+		super(token);
+	}
+}
+public class InstrUnexpectedTokenException : InstrException {
+	this(const(Token) token) {
+		super(token);
+	}
+}
+
+public Mneumonic[string] mneumonics;
+
+
+public bool isMneumonic(string s) {
+	Mneumonic* mneu = (s in mneumonics);
+	return (mneu != null);
+}
+
+private Expression[] getOperands(Token[] tokens, ubyte expected) {
+	Expression[] operands;
+	Token tokLast = tokens[$-1];
+	
+	tokens = tokens[1..$];
+	
+	while (tokens.length > 0) {
+		auto expr = Expression(tokens);
+		tokens = tokens[expr.length..$];
+		
+		if (expr.length == 0) {
+			throw new InstrEmptyOperandException(tokens[0]);
+		} else if (operands.length > expected) {
+			throw new InstrExtraOperandException(expr.tokens[0]);
+		} else if (tokens.length > 0) {
+			if (tokens[0].type != TokenType.COMMA) {
+				throw new InstrUnexpectedTokenException(tokens[0]);
+			} else if (tokens.length < 2) {
+				throw new InstrHangingCommaException(tokens[0]);
+			}
+			
+			/* advance past comma */
+			tokens = tokens[1..$];
+		}
+	}
+	
+	if (operands.length < expected) {
+		throw new InstrMissingOperandException(tokLast);
+	}
+	
+	return operands;
+}
+
+public Instruction parseInstruction(Line line) {
+	auto tokens = line.tokens;
+	Mneumonic* mneu = (tokens[0].tagStr in mneumonics);
+	assert(mneu != null);
+	
+	auto instr = Instruction(*mneu);
+	ubyte expectedOperands = 0;
+	
+	/+final+/ switch (*mneu) {
+	case Mneumonic.NOP:
+		break;
+	default:
+		assert(0);
+	}
+	
+	instr.operands = getOperands(tokens, expectedOperands);
+	
+	return instr;
 }

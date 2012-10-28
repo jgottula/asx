@@ -7,6 +7,7 @@ module expression;
 
 import std.container;
 import std.conv;
+import std.string;
 import pass1;
 import segment;
 import symbol;
@@ -309,29 +310,20 @@ public struct Expression {
 		return tokens[0].tagInt;
 	}
 	
-	ulong length;
+	string toString() {
+		char[] str;
+		
+		foreach (token; tokens) {
+			if (token.type == TokenType.EXPRESSION) {
+				str ~= "EXPRESSION(%s)".format(token.to!string());
+			} else {
+				str ~= "%s ".format(token.to!string());
+			}
+		}
+		
+		return cast(string)str;
+	}
 	
-private:
+	ulong length;
 	Token[] tokens;
 }
-
-import std.conv;
-import std.stdio;
-
-/+
-private Expression subExpr(ref DList!Token tokens) {
-	bool init = false;
-	Expression expr;
-	
-	// scan once for each operator precedence class, in the appropriate direc.
-	// when an operator is found, check for operand on either side
-	// (error if not found) and then replace the three relevant tokens
-	// with a TokenType.EXPRESSION containing the result
-	
-	// for operands of type IDENTIFIER, look up their Expression value in the
-	// symbol table; complain if they are absent
-	
-	//foreach (
-	
-	return expr;
-}+/

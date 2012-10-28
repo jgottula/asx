@@ -6,6 +6,7 @@
 module register;
 
 import std.string;
+import token;
 
 
 static this() {
@@ -29,3 +30,9 @@ public enum Register {
 }
 
 public Register[string] regNames;
+
+
+public bool isRegName(string s) {
+	Register* reg = (s in regNames);
+	return (reg != null);
+}

@@ -81,4 +81,9 @@ public struct Token {
 		Integer tagInt;
 		Expression *tagExpr;
 	}
+	
+	string toString() {
+		/* TODO */
+		return "TODO";
+	}
 }
