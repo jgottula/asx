@@ -268,7 +268,17 @@ lineLoop:
 			}
 			break;
 		case TokenType.LABEL:
-			
+			if ((token.tagStr in ctx.symTable.symbols) == null) {
+				if ((token.tagStr in ctx.labelTable.labels) == null) {
+					ctx.labelTable.labels[token.tagStr] = ctx.getLocation();
+				} else {
+					error(token.origin, "'%s' has already been defined" ~
+						"as a label".format(token.tagStr));
+				}
+			} else {
+				error(token.origin, "'%s' has already been defined " ~
+					"as a symbol".format(token.tagStr));
+			}
 			break;
 		case TokenType.INTEGER:
 		case TokenType.STRING:
@@ -283,11 +293,28 @@ lineLoop:
 		case TokenType.DIVIDE:
 		case TokenType.MODULO:
 		case TokenType.EXPRESSION:
-			error(token.origin, "unexpected %s at start of line".format(
+			/+error(token.origin, "unexpected %s at start of line".format(
+				token.type.to!string()));+/
+			warn(token.origin, "unexpected %s at start of line".format(
 				token.type.to!string()));
 			break;
 		}
 	} while (ctx.nextLine());
+	
+	/* debug */
+	stderr.writefln("symbol table:\n--------");
+	foreach (key; ctx.symTable.symbols.byKey()) {
+		stderr.writefln("'%s' -> %s", key,
+			ctx.symTable.symbols[key].to!string());
+	}
+	stderr.writefln("--------");
+	stderr.writefln("label table:\n--------");
+	foreach (key; ctx.labelTable.labels.byKey()) {
+		auto loc = ctx.labelTable.labels[key];
+		stderr.writefln("'%s' -> %s:%x", key, loc.segment.to!string(),
+			loc.offset);
+	}
+	stderr.writefln("--------");
 	
 	return ctx.getStatements();
 }

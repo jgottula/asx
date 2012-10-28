@@ -6,8 +6,13 @@
 module table;
 
 import expression;
+import segment;
 
 
 public class SymbolTable {
 	Integer[string] symbols;
+}
+
+public class LabelTable {
+	Location[string] labels;
 }
