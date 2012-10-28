@@ -8,22 +8,54 @@ module token;
 import expression;
 
 
+/* in approximate order of precedence, where appropriate */
 public enum TokenType {
 	IDENTIFIER,
-	DIRECTIVE,
 	LABEL,
-	INTEGER,
+	DIRECTIVE,
+	
 	STRING,
-	COMMA,
+	INTEGER,
+	
 	BRACKET_L,
 	BRACKET_R,
+	
 	PAREN_L,
 	PAREN_R,
-	ADD,
-	SUBTRACT,
+	
+	/+BANG,
+	NEGATE,+/
+	
 	MULTIPLY,
 	DIVIDE,
 	MODULO,
+	
+	ADD,
+	SUBTRACT,
+	
+	/+SHIFT_L,
+	SHIFT_R,
+	
+	INEQUAL_LT,
+	INEQUAL_GT,
+	INEQUAL_LE,
+	INEQUAL_GE,
+	
+	EQUAL,
+	NOT_EQUAL,
+	
+	BITWISE_AND,
+	
+	BITWISE_XOR,
+	
+	BITWISE_OR,
+	
+	LOGICAL_AND,
+	
+	LOGICAL_OR,+/
+	
+	COMMA,
+	
 	EXPRESSION,
 }
 
