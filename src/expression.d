@@ -203,20 +203,20 @@ public struct Expression {
 		 * expression (no identifiers or parentheses) */
 		
 		
-		/* find and fix instances of unary minus */
-		for (ulong i = 0; i < tokens.length; ++i) {
+		/* evaluate unary minus (right to left) */
+		for (long i = tokens.length - 2; i >= 0; --i) {
 			auto token = tokens[i];
 			Token* lhs = null, rhs = null;
 			
 			if (i > 0) {
 				lhs = &tokens[i-1];
 			}
-			if (i < tokens.length - 1) {
-				rhs = &tokens[i+1];
-			}
+			/* no need to check if rhs exists, as we accounted for it in the
+			 * for loop declaration */
+			rhs = &tokens[i+1];
 			
 			if (token.type == TokenType.SUBTRACT &&
-				rhs != null && rhs.type == TokenType.INTEGER &&
+				rhs.type == TokenType.INTEGER &&
 				(lhs == null || lhs.type != TokenType.INTEGER)) {
 				rhs.tagInt.negate();
 				
@@ -228,7 +228,7 @@ public struct Expression {
 		}
 		
 		/* evaluate multiplications, divisions, and modulos (left to right) */
-		for (ulong i = 0; i < tokens.length; ++i) {
+		for (long i = 0; i < tokens.length; ++i) {
 			auto token = tokens[i];
 			Token* lhs = null, rhs = null;
 			
