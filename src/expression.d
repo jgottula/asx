@@ -94,17 +94,7 @@ public class EvalException : Exception {
 	
 	const(Token) token;
 }
-public class EvalNotImplementedException : EvalException {
-	this(const(Token) token) {
-		super(token);
-	}
-}
 public class EvalSymNotFoundException : EvalException {
-	this(const(Token) token) {
-		super(token);
-	}
-}
-public class EvalLabelsDisallowedException : EvalException {
 	this(const(Token) token) {
 		super(token);
 	}
@@ -292,7 +282,7 @@ public struct Expression {
 					result.value = lhs.tagInt.value / rhs.tagInt.value;
 				} else if (token.type == TokenType.MODULO) {
 					/* TODO: handle signs properly; see wikipedia for details */
-					throw new EvalNotImplementedException(token);
+					assert(0);
 				} else {
 					assert(0);
 				}

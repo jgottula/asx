@@ -17,8 +17,8 @@ import symbol;
 import token;
 
 
-/* pass1: symbol table, label addrs, expression loading, some directives,
- * parsing/measuring of instructions (but not evaluation) */
+/* pass1: symbols/labels, directives, evaluation (but not of instructions),
+ * instruction size measurement and operand parsing */
 
 
 public enum DataSize {
@@ -30,7 +30,7 @@ public enum DataSize {
 
 public enum StatementType {
 	DATA,
-	DIRECTIVE,
+	INSTRUCTION,
 }
 
 /+public enum DirectiveType {
@@ -157,13 +157,29 @@ private Token[] getExpr(Token[] tokens, out Expression expr) {
 	return tokens[expr.length..$];
 }
 
-private Integer eval(Expression expr) {
+private Integer evalExpr(Expression expr) {
 	try {
 		return expr.eval(ctx.symbols);
+	} catch (EvalSymNotFoundException e) {
+		error(e.token.origin,
+			"the symbol '%s' has not been defined".format(e.token.tagStr));
+	} catch (EvalNoLHSException e) {
+		error(e.token.origin,
+			"missing LHS for %s operator".format(e.token.type.to!string()));
+	} catch (EvalNoRHSException e) {
+		error(e.token.origin,
+			"missing RHS for %s operator".format(e.token.type.to!string()));
+	} catch (EvalUnexpectedLHSException e) {
+		error(e.token.origin,
+			"unexpected LHS in operation: %s".format(e.token.type.to!string()));
+	} catch (EvalUnexpectedRHSException e) {
+		error(e.token.origin,
+			"unexpected RHS in operation: %s".format(e.token.type.to!string()));
+	} catch (EvalConsecutiveIntegerException e) {
+		error(e.token.origin, "expected an operator");
 	} catch (EvalException e) {
 		error(e.token.origin, "unspecified expression evaluation error");
-	} /* TODO: ensure that all exception types are here */
-	/* use e.token.type for better messages */
+	}
 	
 	return Integer(Sign.POSITIVE, 0);
 }
@@ -298,7 +314,7 @@ private void dirData() {
 		}
 	}
 	
-	intValue = eval(exprValue);
+	intValue = evalExpr(exprValue);
 	
 	if (intValue.sign != Sign.POSITIVE) {
 		error(locValue, "value for .%s cannot be negative".format(sizeStr));
@@ -344,7 +360,7 @@ private void dirData() {
 	ulong quantity = 1;
 	
 	if (hasQuantity) {
-		intQuantity = eval(exprQuantity);
+		intQuantity = evalExpr(exprQuantity);
 		
 		if (intQuantity.sign != Sign.POSITIVE) {
 			error(locValue,
