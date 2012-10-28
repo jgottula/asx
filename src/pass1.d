@@ -260,7 +260,6 @@ lineLoop:
 		case TokenType.LABEL:
 			
 			break;
-		case TokenType.REGISTER:
 		case TokenType.INTEGER:
 		case TokenType.STRING:
 		case TokenType.COMMA:

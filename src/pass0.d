@@ -15,7 +15,6 @@ import expression;
 import input;
 import newline;
 import pass1;
-import register;
 import token;
 
 
@@ -280,17 +279,6 @@ Line[] doPass0(in string path, string src) {
 				
 				ctx.state = State.DEFAULT;
 				ctx.advance();
-			} else if ((cast(string)ctx.buffer in regNames) != null) {
-				warn("TODO: put reg recognition elsewhere");
-				
-				auto token = Token(TokenType.REGISTER, ctx.loc);
-				token.tagReg = regNames[cast(string)ctx.buffer];
-				
-				ctx.addToken(token);
-				ctx.buffer.length = 0;
-				
-				ctx.state = State.DEFAULT;
-				goto case State.DEFAULT;
 			} else {
 				auto token = Token(TokenType.IDENTIFIER, ctx.loc);
 				token.tagStr = ctx.buffer.idup;

@@ -158,7 +158,6 @@ public struct Expression {
 				++length;
 				break;
 			case TokenType.DIRECTIVE:
-			case TokenType.REGISTER:
 			case TokenType.STRING:
 			case TokenType.COMMA:
 			case TokenType.BRACKET_L:

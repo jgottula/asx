@@ -6,14 +6,12 @@
 module token;
 
 import expression;
-import register;
 
 
 public enum TokenType {
 	IDENTIFIER,
 	DIRECTIVE,
 	LABEL,
-	REGISTER,
 	INTEGER,
 	STRING,
 	COMMA,
@@ -48,7 +46,6 @@ public struct Token {
 	TokenLocation origin;
 	union {
 		string tagStr;
-		Register tagReg;
 		Integer tagInt;
 		Expression *tagExpr;
 	}

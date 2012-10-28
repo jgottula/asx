@@ -41,9 +41,6 @@ void main(in string[] args) {
 				tag = (token.tagInt.sign == Sign.NEGATIVE ? "-" : "") ~
 					token.tagInt.value.to!string();
 				break;
-			case TokenType.REGISTER:
-				tag = token.tagReg.to!string();
-				break;
 			default:
 				tag = token.tagStr;
 			}
