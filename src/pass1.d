@@ -82,6 +82,10 @@ private class Context {
 		return statements;
 	}
 	
+	void switchSegment(Segment seg) {
+		segment = seg;
+	}
+	
 	bool advance(ulong offset) {
 		final switch (segment) {
 		case Segment.NULL:
@@ -156,7 +160,34 @@ private Integer evalExprNoLabels(Expression expr) {
 	return Integer(Sign.POSITIVE, 0);
 }
 
-private void directiveByte() {
+private void dirSeg(string seg) {
+	Token[] tokens = ctx.getLine().tokens;
+	
+	if (tokens.length > 1) {
+		error(tokens[1].origin, "unexpected %s in segment directive".format(
+			tokens[1].type.to!string()));
+	}
+	
+	Segment segment;
+	
+	switch (seg) {
+	case "text":
+		segment = Segment.TEXT;
+		break;
+	case "data":
+		segment = Segment.DATA;
+		break;
+	case "bss":
+		segment = Segment.BSS;
+		break;
+	default:
+		assert(0);
+	}
+	
+	ctx.switchSegment(segment);
+}
+
+private void dirByte() {
 	Token[] tokens = ctx.getLine().tokens;
 	bool hasQuantity = false;
 	
@@ -256,8 +287,13 @@ lineLoop:
 			break;
 		case TokenType.DIRECTIVE:
 			switch (token.tagStr) {
+			case ".text":
+			case ".data":
+			case ".bss":
+				dirSeg(token.tagStr[1..$]);
+				break;
 			case ".byte":
-				directiveByte();
+				dirByte();
 				break;
 			default:
 				/+error(token.origin,
