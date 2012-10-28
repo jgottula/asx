@@ -89,13 +89,13 @@ private class Context {
 		case Segment.TEXT:
 		case Segment.DATA:
 		case Segment.BSS:
-			offsets[segment] += offset;
+			offsets[segment] = offsets.get(segment, 0) + offset;
 			return true;
 		}
 	}
 	
 	Location getLocation() {
-		return Location(segment, offsets[segment]);
+		return Location(segment, offsets.get(segment, 0));
 	}
 	
 	SymbolTable symTable;
