@@ -16,55 +16,11 @@ import input;
 import newline;
 import pass1;
 import register;
+import token;
 
 
 /* pass0: strip comments, lex */
 
-
-public enum TokenType {
-	IDENTIFIER,
-	DIRECTIVE,
-	LABEL,
-	REGISTER,
-	INTEGER,
-	STRING,
-	COMMA,
-	BRACKET_L,
-	BRACKET_R,
-	PAREN_L,
-	PAREN_R,
-	ADD,
-	SUBTRACT,
-	MULTIPLY,
-	DIVIDE,
-	MODULO,
-	EXPRESSION,
-}
-
-public struct TokenLocation {
-	string file;
-	ulong line, col;
-}
-
-public struct Token {
-	this(TokenType type) {
-		this.type = type;
-		this.origin = TokenLocation();
-	}
-	this(TokenType type, TokenLocation origin) {
-		this.type = type;
-		this.origin = origin;
-	}
-	
-	TokenType type;
-	TokenLocation origin;
-	union {
-		string tagStr;
-		Register tagReg;
-		Integer tagInt;
-		Expression *tagExpr;
-	}
-}
 
 public struct Line {
 	Token[] tokens;

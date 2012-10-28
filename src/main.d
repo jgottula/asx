@@ -13,6 +13,7 @@ import input;
 import newline;
 import pass0;
 import pass1;
+import token;
 
 
 void main(in string[] args) {

@@ -13,6 +13,7 @@ import expression;
 import instruction;
 import pass0;
 import table;
+import token;
 
 
 /* pass1: symbol table, label addrs, expression loading, some directives */

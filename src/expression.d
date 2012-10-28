@@ -6,9 +6,9 @@
 module expression;
 
 import std.container;
-import pass0;
 import pass1;
 import table;
+import token;
 
 
 public enum Sign {
