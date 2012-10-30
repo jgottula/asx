@@ -1,18 +1,34 @@
 TODO
 
+- general
+  - use ansi colors
+    - red for error
+    - yellow for warning
+    - white for other stuff
+  - negative number support for symbols etc
+  - merge most structs into structures.d, then pare down all imports
+  - change instances of union { structs } to abstract base class with subclasses
 - escape.d
   - octal escape sequences
   - hex escape sequences
+- expression.d
+  - modulo
 - pass0.d
   - octal literals
   - hex literals
   - bin literals
   - line continuation ("\\\n")
   - go thru C operators and add them as appropriate
+  - get rid of Register processing (belongs elsewhere)
 - pass1.d
   - file inclusion (when the .include token is encountered, load the file, lex
     separately, then insert its tokens into the current file's array; do this
     recursively)
   - expression handling
-  - ensure 
+  - allow negative values for .byte etc
+  - upon symbol definition, check that no label has that name
+  - and, vice versa
 - pass2.d
+- symbol.d
+- token.d
+  - get rid of Register
