@@ -181,10 +181,14 @@ private void instr() {
 	Line line = ctx.getLine();
 	Instruction instr;
 	
+	if (ctx.getLocation().segment != Segment.TEXT) {
+		warn(line.tokens[0].origin, "instruction not in .text segment");
+	}
+	
 	try {
 		instr = parseInstruction(line);
 	} catch (InstrException e) {
-		error(e.token.origin, "unspecified instruction error");
+		/+error(e.token.origin, "unspecified instruction error");+/
 	} /* TODO: other exceptions */
 	/* TODO: catch expression parsing exceptions
 	 * we could merge with the evalExpr code by having a handler that takes a

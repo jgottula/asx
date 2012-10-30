@@ -137,16 +137,28 @@ public Instruction parseInstruction(Line line) {
 	assert(mneu != null);
 	
 	auto instr = Instruction(*mneu);
-	ubyte expectedOperands = 0;
+	ubyte expOperands = 0;
 	
 	/+final+/ switch (*mneu) {
 	case Mneumonic.NOP:
+	case Mneumonic.RET:
+		break;
+	case Mneumonic.CALL:
+	case Mneumonic.POP:
+	case Mneumonic.PUSH:
+		expOperands = 1;
+		break;
+	case Mneumonic.ADD:
+	case Mneumonic.MOV:
+	case Mneumonic.MUL:
+	case Mneumonic.XOR:
+		expOperands = 2;
 		break;
 	default:
 		assert(0);
 	}
 	
-	instr.operands = getOperands(tokens, expectedOperands);
+	instr.operands = getOperands(tokens, expOperands);
 	
 	return instr;
 }
