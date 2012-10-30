@@ -1,8 +1,12 @@
 .include "include.s"
 
+	.data
+	
 formatStr:
 	.strz "%d\n" // null-terminated ascii string
-
+	
+	.text
+	
 /* program entry point */
 main:
 	mov 7,eax
@@ -20,7 +24,7 @@ main:
 	
 	xor eax,eax
 	ret
-
+	
 /* squares a 32-bit integer */
 square:
 	push ebp
@@ -34,7 +38,7 @@ square:
 	mov ebp,esp
 	pop ebp
 	ret
-
+	
 /* demonstrates size-ambiguous behavior */
 ambiguous:
 	movl 1,[eax]
@@ -43,13 +47,13 @@ ambiguous:
 	mov  1,eax   // invalid, ambiguous
 	
 	ret
-
-/*
- * multi
- * line
- * comment
- */
-/+ nest comment +/
-/+/+ double nest comment +/+/
-/+/+/+/++/+/+/+/
-/+ /* layered */ +/
+	
+	/*
+	 * multi
+	 * line
+	 * comment
+	 */
+	/+ nest comment +/
+	/+/+ double nest comment +/+/
+	/+/+/+/++/+/+/+/
+	/+ /* layered */ +/

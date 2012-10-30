@@ -13,3 +13,17 @@
 //.byte 0 [
 //.byte 0,1 [
 //.byte 0,1[
+
+.text
+.byte 77,10
+a:
+
+.data
+.byte 88,20
+b:
+
+.bss
+.byte 99,30
+c:
+
+nop
