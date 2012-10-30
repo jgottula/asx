@@ -8,10 +8,10 @@
 DC:=ldc2
 DFLAGS:=-w -wi -O0 -g -d-debug -disable-inlining -output-o -unittest
 IMPORTS:=
-LIBS:=
+LIBS:=-L=-lelf
 
 # evaluated when used
-SOURCES=$(wildcard *.d)
+SOURCES=$(shell find -type f -iname '*.d')
 OBJECTS=$(patsubst %.d,%.o,$(SOURCES))
 EXE=asx
 DOCDIR=../doc
