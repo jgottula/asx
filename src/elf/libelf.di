@@ -37,33 +37,33 @@ extern (C) {
 /* Known translation types.  */
 enum Elf_Type
 {
-  ELF_T_BYTE,                   /* unsigned char */
-  ELF_T_ADDR,                   /* Elf32_Addr, Elf64_Addr, ... */
-  ELF_T_DYN,                    /* Dynamic section record.  */
-  ELF_T_EHDR,                   /* ELF header.  */
-  ELF_T_HALF,                   /* Elf32_Half, Elf64_Half, ... */
-  ELF_T_OFF,                    /* Elf32_Off, Elf64_Off, ... */
-  ELF_T_PHDR,                   /* Program header.  */
-  ELF_T_RELA,                   /* Relocation entry with addend.  */
-  ELF_T_REL,                    /* Relocation entry.  */
-  ELF_T_SHDR,                   /* Section header.  */
-  ELF_T_SWORD,                  /* Elf32_Sword, Elf64_Sword, ... */
-  ELF_T_SYM,                    /* Symbol record.  */
-  ELF_T_WORD,                   /* Elf32_Word, Elf64_Word, ... */
-  ELF_T_XWORD,                  /* Elf32_Xword, Elf64_Xword, ... */
-  ELF_T_SXWORD,                 /* Elf32_Sxword, Elf64_Sxword, ... */
-  ELF_T_VDEF,                   /* Elf32_Verdef, Elf64_Verdef, ... */
-  ELF_T_VDAUX,                  /* Elf32_Verdaux, Elf64_Verdaux, ... */
-  ELF_T_VNEED,                  /* Elf32_Verneed, Elf64_Verneed, ... */
-  ELF_T_VNAUX,                  /* Elf32_Vernaux, Elf64_Vernaux, ... */
-  ELF_T_NHDR,                   /* Elf32_Nhdr, Elf64_Nhdr, ... */
-  ELF_T_SYMINFO,		/* Elf32_Syminfo, Elf64_Syminfo, ... */
-  ELF_T_MOVE,			/* Elf32_Move, Elf64_Move, ... */
-  ELF_T_LIB,			/* Elf32_Lib, Elf64_Lib, ... */
-  ELF_T_GNUHASH,		/* GNU-style hash section.  */
-  ELF_T_AUXV,			/* Elf32_auxv_t, Elf64_auxv_t, ... */
+  BYTE,                   /* unsigned char */
+  ADDR,                   /* Elf32_Addr, Elf64_Addr, ... */
+  DYN,                    /* Dynamic section record.  */
+  EHDR,                   /* ELF header.  */
+  HALF,                   /* Elf32_Half, Elf64_Half, ... */
+  OFF,                    /* Elf32_Off, Elf64_Off, ... */
+  PHDR,                   /* Program header.  */
+  RELA,                   /* Relocation entry with addend.  */
+  REL,                    /* Relocation entry.  */
+  SHDR,                   /* Section header.  */
+  SWORD,                  /* Elf32_Sword, Elf64_Sword, ... */
+  SYM,                    /* Symbol record.  */
+  WORD,                   /* Elf32_Word, Elf64_Word, ... */
+  XWORD,                  /* Elf32_Xword, Elf64_Xword, ... */
+  SXWORD,                 /* Elf32_Sxword, Elf64_Sxword, ... */
+  VDEF,                   /* Elf32_Verdef, Elf64_Verdef, ... */
+  VDAUX,                  /* Elf32_Verdaux, Elf64_Verdaux, ... */
+  VNEED,                  /* Elf32_Verneed, Elf64_Verneed, ... */
+  VNAUX,                  /* Elf32_Vernaux, Elf64_Vernaux, ... */
+  NHDR,                   /* Elf32_Nhdr, Elf64_Nhdr, ... */
+  SYMINFO,		/* Elf32_Syminfo, Elf64_Syminfo, ... */
+  MOVE,			/* Elf32_Move, Elf64_Move, ... */
+  LIB,			/* Elf32_Lib, Elf64_Lib, ... */
+  GNUHASH,		/* GNU-style hash section.  */
+  AUXV,			/* Elf32_auxv_t, Elf64_auxv_t, ... */
   /* Keep this the last entry.  */
-  ELF_T_NUM
+  NUM
 }
 
 /* Descriptor for data to be converted to or from memory format.  */
@@ -81,25 +81,25 @@ struct Elf_Data
 /* Commands for `...'.  */
 enum Elf_Cmd
 {
-  ELF_C_NULL,			/* Nothing, terminate, or compute only.  */
-  ELF_C_READ,			/* Read .. */
-  ELF_C_RDWR,			/* Read and write .. */
-  ELF_C_WRITE,			/* Write .. */
-  ELF_C_CLR,			/* Clear flag.  */
-  ELF_C_SET,			/* Set flag.  */
-  ELF_C_FDDONE,			/* Signal that file descriptor will not be
+  NULL,			/* Nothing, terminate, or compute only.  */
+  READ,			/* Read .. */
+  RDWR,			/* Read and write .. */
+  WRITE,			/* Write .. */
+  CLR,			/* Clear flag.  */
+  SET,			/* Set flag.  */
+  FDDONE,			/* Signal that file descriptor will not be
 				   used anymore.  */
-  ELF_C_FDREAD,			/* Read rest of data so that file descriptor
+  FDREAD,			/* Read rest of data so that file descriptor
 				   is not used anymore.  */
   /* The following are extensions.  */
-  ELF_C_READ_MMAP,		/* Read, but mmap the file if possible.  */
-  ELF_C_RDWR_MMAP,		/* Read and write, with mmap.  */
-  ELF_C_WRITE_MMAP,		/* Write, with mmap.  */
-  ELF_C_READ_MMAP_PRIVATE,	/* Read, but memory is writable, results are
+  READ_MMAP,		/* Read, but mmap the file if possible.  */
+  RDWR_MMAP,		/* Read and write, with mmap.  */
+  WRITE_MMAP,		/* Write, with mmap.  */
+  READ_MMAP_PRIVATE,	/* Read, but memory is writable, results are
 				   not written to the file.  */
-  ELF_C_EMPTY,			/* Copy basic file data but not the content. */
+  EMPTY,			/* Copy basic file data but not the content. */
   /* Keep this the last entry.  */
-  ELF_C_NUM
+  NUM
 }
 
 
@@ -115,12 +115,12 @@ enum
 /* Identification values for recognized object files.  */
 enum Elf_Kind
 {
-  ELF_K_NONE,			/* Unknown.  */
-  ELF_K_AR,			/* Archive.  */
-  ELF_K_COFF,			/* Stupid old COFF.  */
-  ELF_K_ELF,			/* ELF file.  */
+  NONE,			/* Unknown.  */
+  AR,			/* Archive.  */
+  COFF,			/* Stupid old COFF.  */
+  ELF,			/* ELF file.  */
   /* Keep this the last entry.  */
-  ELF_K_NUM
+  NUM
 }
 
 
