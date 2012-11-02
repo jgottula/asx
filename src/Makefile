@@ -7,11 +7,11 @@
 
 DC:=ldc2
 DFLAGS:=-w -wi -O0 -g -d-debug -disable-inlining -output-o -unittest
-IMPORTS:=
 LIBS:=-L=-lelf
 
 # evaluated when used
 SOURCES=$(shell find -type f -iname '*.d')
+IMPORTS:=$(shell find -type f -iname '*.di')
 OBJECTS=$(patsubst %.d,%.o,$(SOURCES))
 EXE=asx
 DOCDIR=../doc
@@ -26,8 +26,8 @@ all: $(EXE)
 $(EXE): $(OBJECTS) Makefile
 	$(DC) $(DFLAGS) $(LIBS) -of=$@ $(OBJECTS)
 
-%.o: %.d Makefile
-	$(DC) $(DFLAGS) $(IMPORTS) -Dd=$(DOCDIR) -of=$@ -c $<
+%.o: %.d $(IMPORTS) Makefile
+	$(DC) $(DFLAGS) -Dd=$(DOCDIR) -of=$@ -c $<
 
 clean:
 	rm -f $(CLEAN)
