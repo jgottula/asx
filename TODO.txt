@@ -8,6 +8,15 @@ TODO
   - negative number support for symbols etc
   - merge most structs into structures.d, then pare down all imports
   - change instances of union { structs } to abstract base class with subclasses
+  - provide first-class operator for (1 << n) operations
+  - make it possible to write a syscall macro with variadic parameters
+    - provide a local var with the number of params given
+    - provide numbered vars (or better, an array) with the parameters
+  - some sort of #include that just dumps a binary into that location
+    - also, have a configurable version which can read data written, for
+      example, as sets of hex characters in ASCII
+    - this makes it far easier to import raw data into a program; otherwise, one
+      must put .byte's all over the place etc.
 - escape.d
   - octal escape sequences
   - hex escape sequences
