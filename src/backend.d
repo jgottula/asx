@@ -58,7 +58,7 @@ private void error(in string phase, in string msg, bool elfMsg = true) {
 }
 
 private void warn(in string phase, in string msg, bool elfMsg = true) {
-	stderr.writefln("[backend|%s|warn] %s", phase, msg,
+	stderr.writefln("[backend|%s|warn] %s%s", phase, msg,
 		(elfMsg ? elfErrorStr() : ""));
 }
 
