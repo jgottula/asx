@@ -1,5 +1,11 @@
 TODO
 
+- now
+  - switch back to gdc/gdmd (find older commit)
+  - try kdevelop or sublime
+  - investigate cmake/scons
+  - try kdbg, nevimer
+
 - general
   - use ansi colors
     - red for error
