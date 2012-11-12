@@ -15,16 +15,23 @@ import std.string;
 import elf.libelf;
 
 
-string strTable = '\0' ~ ".strtab\0" ~ ".text\0";
+string shStrTable =
+	"\0.shstrtab\0.text\0.rodata\0.data\0.bss\0.strtab\0.symtab\0";
+immutable(Elf64_Word) shStrTable_shstrtab = 0x01;
+immutable(Elf64_Word) shStrTable_text     = 0x0b;
+immutable(Elf64_Word) shStrTable_rodata   = 0x11;
+immutable(Elf64_Word) shStrTable_data     = 0x19;
+immutable(Elf64_Word) shStrTable_bss      = 0x1f;
+immutable(Elf64_Word) shStrTable_strtab   = 0x24;
+immutable(Elf64_Word) shStrTable_symtab   = 0x2c;
 
 immutable(ubyte)[] helloData = [
 	'h', 'e', 'l', 'l', 'o'
 ];
 
-int fd;
-Elf* eDesc;
+int fd = -1;
+Elf* eDesc = null;
 Elf64_Ehdr* eExecHeader;
-Elf64_Phdr* ePrgmHeader;
 Elf64_Shdr* eSectHeader;
 Elf_Scn* eSect;
 Elf_Data* eData;
@@ -42,43 +49,44 @@ private string elfErrorStr() {
 	return "[%d] %s".format(elfErr, elf_errmsg(elfErr).to!string());
 }
 
-private void error(in string msg, bool elfMsg = true) {
-	stderr.writefln("[backend|error] %s%s", msg, (elfMsg ? elfErrorStr() : ""));
+private void error(in string phase, in string msg, bool elfMsg = true) {
+	stderr.writefln("[backend|%s|error] %s%s", phase, msg,
+		(elfMsg ? elfErrorStr() : ""));
+	
+	objEnd();
 	exit(1);
 }
 
-private void warn(in string msg, bool elfMsg = true) {
-	stderr.writefln("[backend|warn] %s", msg, (elfMsg ? elfErrorStr() : ""));
+private void warn(in string phase, in string msg, bool elfMsg = true) {
+	stderr.writefln("[backend|%s|warn] %s", phase, msg,
+		(elfMsg ? elfErrorStr() : ""));
 }
 
-private void elfInit() {
-	if (elf_version(EV_CURRENT) == EV_NONE) {
-		error("libelf init failed");
-	}
-}
-
-void makeObject() {
-	elfInit();
+private void objBegin(string path) {
+	/* initialize libelf */
 	
-	/* open the object file to which we will write */
+	if (elf_version(EV_CURRENT) == EV_NONE) {
+		error("begin", "libelf init failed");
+	}
+	
+	/* open the object file for writing */
+	
 	if ((fd = open("test_output.o".toStringz(), O_WRONLY | O_CREAT,
 		octal!644)) < 0) {
-		error("could not create output file (errno: %d)".format(errno()),
-			false);
+		error("begin", "could not create output file (errno: %d)".format(
+			errno()), false);
 	}
 	
-	scope(exit) close(fd);
+	/* get a new elf descriptor */
 	
-	/* get an ELF descriptor for writing a new ELF object */
 	if ((eDesc = elf_begin(fd, Elf_Cmd.WRITE, null)) == null) {
-		error("elf_begin failure: ");
+		error("begin", "elf_begin failure: ");
 	}
 	
-	scope(exit) elf_end(eDesc);
+	/* allocate and set up the elf header */
 	
-	/* allocate an ELF executable header */
 	if ((eExecHeader = elf64_newehdr(eDesc)) == null) {
-		error("elf64_newehdr failure: ");
+		error("begin", "elf64_newehdr failure: ");
 	}
 	
 	eExecHeader.e_ident[EI_DATA] = ELFDATA2LSB;
@@ -86,76 +94,102 @@ void makeObject() {
 	eExecHeader.e_machine        = EM_X86_64;
 	eExecHeader.e_version        = EV_CURRENT;
 	eExecHeader.e_shstrndx       = 1;
-	
-	/* allocate a program header with size 1 (for now) */
-	if ((ePrgmHeader = elf64_newphdr(eDesc, 1)) == null) {
-		error("elf64_newphdr failure: ");
-	}
-	
-	/* allocate a new section */
+}
+
+private void obj_shstrtab() {
 	if ((eSect = elf_newscn(eDesc)) == null) {
-		error("elf_newscn(a) failure: ");
+		error("shstrtab", "elf_newscn failure: ");
 	}
 	
-	/* allocate a new data buffer for the section */
 	if ((eData = elf_newdata(eSect)) == null) {
-		error("elf_newdata(a) failure: ");
+		error("shstrtab", "elf_newdata failure: ");
 	}
 	
-	eData.d_buf     = cast(void*)helloData;
-	eData.d_type    = Elf_Type.BYTE;
-	eData.d_version = EV_CURRENT;
-	eData.d_size    = helloData.length;
-	eData.d_off     = 0;
-	
-	/* get the section header for the text section */
-	if ((eSectHeader = elf64_getshdr(eSect)) == null) {
-		error("elf64_getshdr(a) failure: ");
-	}
-	
-	eSectHeader.sh_name      = 2;
-	eSectHeader.sh_type      = SHT_PROGBITS;
-	eSectHeader.sh_flags     = SHF_ALLOC | SHF_EXECINSTR;
-	eSectHeader.sh_addralign = 4;
-	
-	/* allocate a new section for the string table */
-	if ((eSect = elf_newscn(eDesc)) == null) {
-		error("elf_newscn(b) failure: ");
-	}
-	
-	/* allocate a new data buffer for the section */
-	if ((eData = elf_newdata(eSect)) == null) {
-		error("elf_newdata(b) failure: ");
-	}
-	
-	eData.d_buf  = cast(void*)strTable;
+	eData.d_buf  = cast(void*)shStrTable;
 	eData.d_type = Elf_Type.BYTE;
 	eData.d_version = EV_CURRENT;
-	eData.d_size = strTable.length;
+	eData.d_size = shStrTable.length;
 	eData.d_off  = 0;
 	
-	/* get the section header for the string table section */
 	if ((eSectHeader = elf64_getshdr(eSect)) == null) {
-		error("elf64_getshdr(b) failure: ");
+		error("shstrtab", "elf64_getshdr failure: ");
 	}
 	
-	eSectHeader.sh_name    = 1;
+	eSectHeader.sh_name    = shStrTable_shstrtab;
 	eSectHeader.sh_type    = SHT_STRTAB;
 	eSectHeader.sh_flags   = 0;
 	eSectHeader.sh_entsize = 0;
-	
-	/* compute the layout but don't write it out */
-	if (elf_update(eDesc, Elf_Cmd.NULL) < 0) {
-		error("elf_update(a) failure: ");
+}
+
+private void obj_text(in ubyte[] data) {
+	if ((eSect = elf_newscn(eDesc)) == null) {
+		error("text", "elf_newscn failure: ");
 	}
 	
-	ePrgmHeader.p_type = PT_PHDR;
-	ePrgmHeader.p_offset = eExecHeader.e_phoff;
-	ePrgmHeader.p_filesz = elf64_fsize(Elf_Type.PHDR, 1, EV_CURRENT);
+	if ((eData = elf_newdata(eSect)) == null) {
+		error("text", "elf_newdata failure: ");
+	}
 	
-	elf_flagphdr(eDesc, Elf_Cmd.SET, ELF_F_DIRTY);
+	eData.d_buf     = cast(void*)data;
+	eData.d_type    = Elf_Type.BYTE;
+	eData.d_version = EV_CURRENT;
+	eData.d_size    = data.length;
+	eData.d_off     = 0;
 	
+	if ((eSectHeader = elf64_getshdr(eSect)) == null) {
+		error("text", "elf64_getshdr failure: ");
+	}
+	
+	eSectHeader.sh_name      = shStrTable_text;
+	eSectHeader.sh_type      = SHT_PROGBITS;
+	eSectHeader.sh_flags     = SHF_ALLOC | SHF_EXECINSTR;
+	eSectHeader.sh_addralign = 4;
+}
+
+private void obj_rodata(in ubyte[] data) {
+	
+}
+
+private void obj_data(in ubyte[] data) {
+	
+}
+
+private void obj_bss(Elf64_Xword size) {
+	
+}
+
+private void obj_strtab(string[] strs) {
+	
+}
+
+private void obj_symtab(/* ... */) {
+	
+}
+
+private void objWrite() {
 	if (elf_update(eDesc, Elf_Cmd.WRITE) < 0) {
-		error("elf_update(b) failure: ");
+		error("write", "elf_update failure: ");
 	}
+}
+
+private void objEnd() {
+	if (eDesc != null) {
+		elf_end(eDesc);
+		eDesc = null;
+	}
+	
+	if (fd != -1) {
+		close(fd);
+		fd = -1;
+	}
+}
+
+void makeObject(string path) {
+	objBegin(path);
+	
+	obj_shstrtab();
+	obj_text(helloData);
+	
+	objWrite();
+	objEnd();
 }

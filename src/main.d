@@ -8,6 +8,7 @@ module main;
 import std.c.stdlib;
 import std.conv;
 import std.stdio;
+import backend;
 import expression;
 import input;
 import newline;
@@ -24,7 +25,9 @@ void main(in string[] args) {
 		exit(1);
 	}
 	
-	string path = args[1];
+	makeObject("test_output.o");
+	
+	/+string path = args[1];
 	string source = readSource(path);
 	fixNewlines(source);
 	
@@ -51,5 +54,5 @@ void main(in string[] args) {
 		writeln();
 	}
 	
-	doPass1(lines);
+	doPass1(lines);+/
 }
