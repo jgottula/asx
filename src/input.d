@@ -27,7 +27,11 @@ private void warn(in string path, in string msg) {
 
 string readSource(in string path, bool include = false) {
 	if (!path.exists()) {
-		error(path, "the file does not exist");
+		error(path, "'%s' does not exist".format(path));
+	} else if (path.isDir()) {
+		error(path, "'%s' is a directory, not a file".format(path));
+	} else if (!path.isFile()) {
+		error(path, "'%s' is not a file".format(path));
 	}
 	
 	File file;
