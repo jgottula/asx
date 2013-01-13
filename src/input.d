@@ -26,10 +26,6 @@ private void warn(in string path, in string msg) {
 }
 
 string readSource(in string path, bool include = false) {
-	if (!include && (path.length < 3 || path[$-2..$] != ".s")) {
-		error(path, "expected a file ending in '.s'");
-	}
-	
 	if (!path.exists()) {
 		error(path, "the file does not exist");
 	}

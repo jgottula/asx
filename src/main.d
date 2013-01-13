@@ -7,6 +7,7 @@ module main;
 
 import std.c.stdlib;
 import std.conv;
+import std.regex;
 import std.stdio;
 import backend;
 import expression;
@@ -24,10 +25,9 @@ void main(in string[] args) {
 		stderr.write("[main|error] expected one argument: source file\n");
 		exit(1);
 	}
+
 	
-	makeObject("test_output.o", BackendPkg([0,1,2,3], [], [], 0));
-	
-	/+string path = args[1];
+	string path = args[1];
 	string source = readSource(path);
 	fixNewlines(source);
 	
@@ -54,5 +54,8 @@ void main(in string[] args) {
 		writeln();
 	}
 	
-	doPass1(lines);+/
+	doPass1(lines);
+
+	string objPath = replace(path, regex(r"\.\w*$", "g"), "") ~ ".o";
+	makeObject(objPath, BackendPkg([0,1,2,3], [], [], 0));
 }
