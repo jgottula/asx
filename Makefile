@@ -13,7 +13,7 @@ LIBS:=-lelf
 
 # evaluated when used
 SOURCES=$(shell find src -type f -iname '*.d')
-IMPORTS:=$(shell find src -type f -iname '*.di')
+IMPORTS=$(shell find src -type f -iname '*.di')
 OBJECTS=$(patsubst %.d,%.o,$(SOURCES))
 EXE=bin/asx
 CLEAN=$(wildcard $(EXE)) $(wildcard src/*.o) $(wildcard dir/*.html)
@@ -28,7 +28,7 @@ $(EXE): $(OBJECTS) Makefile
 	$(DC) $(DFLAGS) $(LIBS) -o $@ $(OBJECTS)
 
 src/%.o: src/%.d $(IMPORTS) Makefile
-	$(DC) $(DFLAGS) -I src -fdoc-dir=docs -o $@ -c $<
+	$(DC) $(DFLAGS) -I src -fdoc-dir=doc -o $@ -c $<
 
 clean:
 	rm -f $(CLEAN)
