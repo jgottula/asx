@@ -57,5 +57,5 @@ void main(in string[] args) {
 	doPass1(lines);
 
 	string objPath = replace(path, regex(r"\.\w*$", "g"), "") ~ ".o";
-	makeObject(objPath, BackendPkg([0,1,2,3], [], [], 0));
+	makeObject(objPath, BackendPkg([0,1,2,3], [4, 5, 6], [7, 8], 0x100));
 }

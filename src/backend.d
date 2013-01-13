@@ -13,6 +13,7 @@ import std.conv;
 import std.stdio;
 import std.string;
 import elf.libelf;
+import symbol;
 
 
 string shStrTable =
@@ -24,6 +25,8 @@ immutable(Elf64_Word) shStrTable_data     = 0x19;
 immutable(Elf64_Word) shStrTable_bss      = 0x1f;
 immutable(Elf64_Word) shStrTable_strtab   = 0x24;
 immutable(Elf64_Word) shStrTable_symtab   = 0x2c;
+
+immutable(Elf64_Xword) sectAlign = 16;
 
 int fd = -1;
 Elf* eDesc = null;
@@ -38,6 +41,7 @@ public struct BackendPkg {
 	ubyte[] rodata;
 	ubyte[] data;
 	ulong bssLen;
+	SymbolTable symTab;
 }
 
 private string elfErrorStr() {
@@ -142,26 +146,88 @@ private void obj_text(in ubyte[] data) {
 	eSectHeader.sh_name      = shStrTable_text;
 	eSectHeader.sh_type      = SHT_PROGBITS;
 	eSectHeader.sh_flags     = SHF_ALLOC | SHF_EXECINSTR;
-	eSectHeader.sh_addralign = 4;
+	eSectHeader.sh_addralign = sectAlign;
 }
 
 private void obj_rodata(in ubyte[] data) {
+	if ((eSect = elf_newscn(eDesc)) == null) {
+		error("rodata", "elf_newscn failure: ");
+	}
 	
+	if ((eData = elf_newdata(eSect)) == null) {
+		error("rodata", "elf_newdata failure: ");
+	}
+	
+	eData.d_buf     = cast(void*)data;
+	eData.d_type    = Elf_Type.BYTE;
+	eData.d_version = EV_CURRENT;
+	eData.d_size    = data.length;
+	eData.d_off     = 0;
+	
+	if ((eSectHeader = elf64_getshdr(eSect)) == null) {
+		error("rodata", "elf64_getshdr failure: ");
+	}
+	
+	eSectHeader.sh_name      = shStrTable_rodata;
+	eSectHeader.sh_type      = SHT_PROGBITS;
+	eSectHeader.sh_flags     = SHF_ALLOC;
+	eSectHeader.sh_addralign = sectAlign;
 }
 
 private void obj_data(in ubyte[] data) {
+	if ((eSect = elf_newscn(eDesc)) == null) {
+		error("data", "elf_newscn failure: ");
+	}
 	
+	if ((eData = elf_newdata(eSect)) == null) {
+		error("data", "elf_newdata failure: ");
+	}
+	
+	eData.d_buf     = cast(void*)data;
+	eData.d_type    = Elf_Type.BYTE;
+	eData.d_version = EV_CURRENT;
+	eData.d_size    = data.length;
+	eData.d_off     = 0;
+	
+	if ((eSectHeader = elf64_getshdr(eSect)) == null) {
+		error("data", "elf64_getshdr failure: ");
+	}
+	
+	eSectHeader.sh_name      = shStrTable_data;
+	eSectHeader.sh_type      = SHT_PROGBITS;
+	eSectHeader.sh_flags     = SHF_ALLOC | SHF_WRITE;
+	eSectHeader.sh_addralign = sectAlign;
 }
 
 private void obj_bss(Elf64_Xword size) {
+	if ((eSect = elf_newscn(eDesc)) == null) {
+		error("bss", "elf_newscn failure: ");
+	}
 	
+	if ((eData = elf_newdata(eSect)) == null) {
+		error("bss", "elf_newdata failure: ");
+	}
+	
+	eData.d_type    = Elf_Type.BYTE;
+	eData.d_version = EV_CURRENT;
+	eData.d_size    = size;
+	eData.d_off     = 0;
+	
+	if ((eSectHeader = elf64_getshdr(eSect)) == null) {
+		error("bss", "elf64_getshdr failure: ");
+	}
+	
+	eSectHeader.sh_name      = shStrTable_bss;
+	eSectHeader.sh_type      = SHT_NOBITS;
+	eSectHeader.sh_flags     = SHF_ALLOC | SHF_WRITE;
+	eSectHeader.sh_addralign = sectAlign;
 }
 
 private void obj_strtab(string[] strs) {
 	
 }
 
-private void obj_symtab(/* ... */) {
+private void obj_symtab(SymbolTable symTab) {
 	
 }
 
@@ -188,6 +254,11 @@ void makeObject(string path, BackendPkg pkg) {
 	
 	obj_shstrtab();
 	obj_text(pkg.text);
+	obj_rodata(pkg.rodata);
+	obj_data(pkg.data);
+	obj_bss(pkg.bssLen);
+	/* TODO: str table? */
+	obj_symtab(pkg.symTab);
 	
 	objWrite();
 	objEnd();
