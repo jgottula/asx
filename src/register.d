@@ -6,7 +6,6 @@
 module register;
 
 import std.string;
-import token;
 
 
 static this() {

@@ -25,7 +25,7 @@ void main(in string[] args) {
 		exit(1);
 	}
 	
-	makeObject("test_output.o");
+	makeObject("test_output.o", BackendPkg([0,1,2,3], [], [], 0));
 	
 	/+string path = args[1];
 	string source = readSource(path);

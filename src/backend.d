@@ -25,10 +25,6 @@ immutable(Elf64_Word) shStrTable_bss      = 0x1f;
 immutable(Elf64_Word) shStrTable_strtab   = 0x24;
 immutable(Elf64_Word) shStrTable_symtab   = 0x2c;
 
-immutable(ubyte)[] helloData = [
-	'h', 'e', 'l', 'l', 'o'
-];
-
 int fd = -1;
 Elf* eDesc = null;
 Elf64_Ehdr* eExecHeader;
@@ -38,7 +34,10 @@ Elf_Data* eData;
 
 
 public struct BackendPkg {
-	
+	ubyte[] text;
+	ubyte[] rodata;
+	ubyte[] data;
+	ulong bssLen;
 }
 
 private string elfErrorStr() {
@@ -184,11 +183,11 @@ private void objEnd() {
 	}
 }
 
-void makeObject(string path) {
+void makeObject(string path, BackendPkg pkg) {
 	objBegin(path);
 	
 	obj_shstrtab();
-	obj_text(helloData);
+	obj_text(pkg.text);
 	
 	objWrite();
 	objEnd();

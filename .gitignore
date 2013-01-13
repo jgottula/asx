@@ -1,4 +1,5 @@
-*.o
+bin/
+src/*.o
+test/*.o
 doc/
-src/asx
-*.kdev4
+*.sublime-*

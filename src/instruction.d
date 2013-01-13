@@ -162,3 +162,21 @@ public Instruction parseInstruction(Line line) {
 	
 	return instr;
 }
+
+public ubyte instrSize(Instruction instr) {
+	ubyte size = 0;
+	
+	/+final+/ switch (instr.mneu) {
+	case Mneumonic.NOP:
+	case Mneumonic.RET:
+		size = 1;
+		break;
+	default:
+		assert(0);
+	}
+	
+	/* TODO: increment size based on operands and their addressing modes, if
+	 * appropriate */
+	
+	return size;
+}
