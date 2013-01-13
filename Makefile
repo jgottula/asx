@@ -8,7 +8,7 @@
 MAKEFLAGS+=-j16
 
 DC:=gdc
-DFLAGS:=-Wall -O0 -g -funittest -fdoc
+DFLAGS:=-Wall -Og -ggdb -funittest -fdoc
 LIBS:=-lelf
 
 # evaluated when used
