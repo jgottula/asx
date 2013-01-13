@@ -70,7 +70,7 @@ private void objBegin(string path) {
 	
 	/* open the object file for writing */
 	
-	if ((fd = open("test_output.o".toStringz(), O_WRONLY | O_CREAT,
+	if ((fd = open(path.toStringz(), O_WRONLY | O_CREAT,
 		octal!644)) < 0) {
 		error("begin", "could not create output file (errno: %d)".format(
 			errno()), false);
